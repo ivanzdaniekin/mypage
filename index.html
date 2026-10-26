@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ваше имя — ваше дело</title>
+  <meta name="description" content="Одностраничная визитка в стиле markmirvoda.online">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #111111;
+      --paper: #FFF6E5;
+      --lime: #D4FF3A;
+      --blue: #3B5BFF;
+      --sky: #B9C6FF;
+      --pink: #FF7AC6;
+      --orange: #FF8A3D;
+      --muted: #5B5B5B;
+      --line: 3px solid var(--ink);
+      --shadow: 6px 6px 0 var(--ink);
+    }
+
+    *,
+    *::before,
+    *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      background-image: radial-gradient(rgba(17,17,17,.09) 1.2px, transparent 1.2px);
+      background-size: 18px 18px;
+      line-height: 1.45;
+      font-size: 16px;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 28px 16px 80px;
+    }
+
+    /* Hero */
+    .hero { text-align: center; }
+
+    .ava {
+      position: relative;
+      width: 124px;
+      height: 124px;
+      margin: 8px auto 18px;
+    }
+    .ava img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid var(--ink);
+      background: var(--lime);
+      box-shadow: 5px 5px 0 var(--ink);
+      transform: rotate(-4deg);
+      display: block;
+    }
+
+    .burst {
+      position: absolute;
+      right: -14px;
+      top: -10px;
+      width: 46px;
+      height: 46px;
+      background: var(--pink);
+      border: var(--line);
+      clip-path: polygon(50% 0,61% 30%,95% 20%,72% 47%,98% 70%,64% 68%,58% 100%,43% 72%,10% 88%,28% 58%,0 35%,34% 33%);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      animation: spin 9s linear infinite;
+    }
+
+    .name {
+      font-family: "Unbounded", sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin: 0 0 10px;
+      text-transform: uppercase;
+    }
+
+    .tagline {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0 auto 14px;
+      max-width: 360px;
+    }
+
+    mark {
+      background: var(--lime);
+      color: var(--ink);
+      padding: 0 6px;
+      border-radius: 8px;
+    }
+
+    .sticker {
+      display: inline-block;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 12px;
+      border: var(--line);
+      border-radius: 999px;
+      background: var(--pink);
+      box-shadow: 2px 2px 0 var(--ink);
+      transform: rotate(-3deg);
+      margin-bottom: 14px;
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin: 6px 0 30px;
+    }
+
+    .chip {
+      background: #fff;
+      border: var(--line);
+      border-radius: 12px;
+      padding: 8px 2px;
+      text-align: center;
+    }
+    .chip b {
+      display: block;
+      font-family: "Unbounded", sans-serif;
+      font-size: 16px;
+    }
+    .chip span {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    /* Product card */
+    .product {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--lime);
+      border: 3px solid var(--ink);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 22px 18px 18px;
+      margin-bottom: 30px;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .product:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 7px 7px 0 var(--ink);
+    }
+    .product:active {
+      transform: translate(4px, 4px);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
+    .product .new {
+      position: absolute;
+      top: -15px;
+      left: 16px;
+      background: var(--ink);
+      color: var(--lime);
+      font-weight: 800;
+      font-size: 12px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      transform: rotate(-4deg);
+    }
+    .product .price {
+      position: absolute;
+      top: -18px;
+      right: 12px;
+      width: 76px;
+      height: 76px;
+      background: var(--pink);
+      border: var(--line);
+      clip-path: polygon(50% 0,61% 22%,85% 15%,80% 39%,100% 50%,80% 61%,85% 85%,61% 78%,50% 100%,39% 78%,15% 85%,20% 61%,0 50%,20% 39%,15% 15%,39% 22%);
+      display: grid;
+      place-items: center;
+      font-family: "Unbounded", sans-serif;
+      font-weight: 800;
+      font-size: 17px;
+      transform: rotate(8deg);
+    }
+    .product h3 {
+      font-family: "Unbounded", sans-serif;
+      font-weight: 800;
+      font-size: 22px;
+      line-height: 1.1;
+      margin: 4px 70px 8px 0;
+      text-transform: uppercase;
+    }
+    .product p {
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .pill {
+      font-size: 12px;
+      font-weight: 800;
+      background: #fff;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      padding: 3px 9px;
+    }
+
+    /* Links */
+    .links {
+      display: grid;
+      gap: 12px;
+    }
+    .lnk {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      background: #fff;
+      border: var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .lnk:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 var(--ink);
+    }
+    .lnk:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0 var(--ink);
+    }
+    .ico {
+      width: 46px;
+      height: 46px;
+      border: var(--line);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      transform: rotate(-4deg);
+    }
+    .lnk:nth-child(2n) .ico {
+      transform: rotate(4deg);
+    }
+    .lnk b {
+      display: block;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .lnk small {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 800;
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+    .dark {
+      background: var(--ink);
+      color: #fff;
+    }
+    .dark small {
+      color: #cfcfcf;
+    }
+    .dark .ico {
+      border-color: #fff;
+    }
+    .dark .tag {
+      background: var(--lime) !important;
+      border-color: var(--lime);
+      color: var(--ink) !important;
+    }
+
+    /* Cases */
+    .cases {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 16px 12px;
+      margin: 0 -16px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .cases::-webkit-scrollbar { display: none; }
+    .case {
+      flex: 0 0 72%;
+      scroll-snap-align: center;
+      background: #fff;
+      border: var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .case:nth-child(odd) { transform: rotate(-1.2deg); }
+    .case:nth-child(even) { transform: rotate(1.2deg); }
+    .case b {
+      display: block;
+      font-family: "Unbounded", sans-serif;
+      font-size: 18px;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+    .case span {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      margin: -6px 0 10px;
+      font-weight: 700;
+    }
+
+    .fine {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 34px;
+      font-weight: 700;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Hero -->
+  <div class="hero">
+    <!-- Замените картинку на свою (квадратную backdrop) -->
+    <div class="ava">
+      <img src="https://placehold.co/300x300/fff6e5/111111?text=AV" alt="Аватар">
+      <div class="burst" aria-hidden="title">✨</div>
+    </div>
+
+    <div class="sticker">Ваше дело с иронией 🎯</div>
+
+    <h1 class="name">Иван Иванов</h1>
+
+    <p class="tagline">
+      Занимаюсь <mark>дизайном интерфейсов с 2020</mark> и делаю сайты, которые не стыдно показать.
+    </p>
+
+    <div class="chips">
+      <div class="chip"><b>5 лет</b><span>стаж</span></div>
+      <div class="chip"><b>40+</b><span>проектов</span></div>
+      <div class="chip"><b>8</b><span>наград</span></div>
+      <div class="chip"><b>1</b><span>кофе</span></div>
+    </div>
+  </div>
+
+  <!-- Product -->
+  <a href="#" class="product">
+    <span class="new">НОВЫЙ КУРС 🚀</span>
+    <span class="price">€49</span>
+    <h3>Дизайн)<br>сайтов</h3>
+    <p>Научим делать страницы в духе этой визитки без шаблонов и мучений.</p>
+    <div class="pills">
+      <span class="pill">6 недель</span>
+      <span class="pill">3 модуля</span>
+      <span class="pill">обратная связь</span>
+    </div>
+    <div style="font-weight:800; font-family:'Unbounded'; font-size:13px; text-transform:uppercase;">Забирай в Telegram ↓</div>
+  </a>
+
+  <!-- Links -->
+  <div class="links">
+    <a href="https://t.me" class="lnk">
+      <div class="ico" style="background:var(--pink)">💬</div>
+      <div>
+        <b>Telegram-канал</b>
+        <small>подписаться на разборы</small>
+      </div>
+      <div class="tag">бесплатно</div>
+    </a>
+
+    <a href="mailto:hello@example.com" class="lnk">
+      <div class="ico" style="background:var(--sky)">✉️</div>
+      <div>
+        <b>Написать мне</b>
+        <small>для заказа и консультации</small>
+      </div>
+      <div class="tag">почта</div>
+    </a>
+
+    <a href="#" class="lnk dark">
+      <div class="ico" style="background:var(--lime)">💸</div>
+      <div>
+        <b>Калькулятор бюджета</b>
+        <small>заберите бесплатно</small>
+      </div>
+      <div class="tag">инструмент</div>
+    </a>
+
+    <a href="#" class="lnk">
+      <div class="ico" style="background:var(--orange)">📂</div>
+      <div>
+        <b>Кейсы</b>
+        <span style="display:block">читать на vc.ru</span>
+      </div>
+      <div class="tag">статьи</div>
+    </a>
+  </div>
+
+  <!-- Cases carousel -->
+  <div class="hint">Последние работы</div>
+  <div class="cases">
+    <div class="case">
+      <b>Брандинг для кафе</b>
+      <span>Москва, 2025</span>
+    </div>
+    <div class="case">
+      <b>Сайт стартапа</b>
+      <span>Лендинг на Tilda</span>
+    </div>
+    <div class="case">
+      <b>Редизайн приложения</b>
+      <span>iOS · Figma</span>
+    </div>
+  </div>
+
+  <div class="fine">Сделано в стиле «Анти-таргетолог» • ⌘+D, чтобы сохранить в закладки</div>
+
+</div>
+
+</body>
+</html>
