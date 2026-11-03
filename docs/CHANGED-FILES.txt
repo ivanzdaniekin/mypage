@@ -4,6 +4,7 @@ assets/background.jpg
 assets/favicon.svg
 assets/portrait.jpg
 assets/style.css
+docs/CHANGED-FILES.txt
 docs/SEARCH-CONSOLE.md
 docs/SEO-AUDIT.md
 docs/templates/rabota-bydgoszcz.md
