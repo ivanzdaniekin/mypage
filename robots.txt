@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /mypage/
+Sitemap: https://ivanzdaniekin.github.io/mypage/sitemap.xml
