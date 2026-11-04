@@ -1,0 +1,17 @@
+name = "mypage-applications"
+main = "worker.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = true
+[vars]
+ENABLED = "false"
+PRIVACY_APPROVED = "false"
+PRIVACY_VERSION = ""
+APPS_SCRIPT_URL = ""
+[[d1_databases]]
+binding = "DB"
+database_name = "mypage-abuse-protection"
+database_id = "REPLACE_WITH_OWNER_CREATED_FREE_D1_ID"
+[triggers]
+crons = ["0 3 * * *"]
+[observability]
+enabled = false
