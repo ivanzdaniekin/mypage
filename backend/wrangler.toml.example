@@ -4,6 +4,7 @@ compatibility_date = "2026-11-01"
 workers_dev = true
 [vars]
 ENABLED = "false"
+TEST_ONLY = "true"
 PRIVACY_APPROVED = "false"
 PRIVACY_VERSION = ""
 APPS_SCRIPT_URL = ""
