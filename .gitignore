@@ -2,3 +2,5 @@ backend/wrangler.toml
 backend/.dev.vars
 backend/.wrangler/
 node_modules/
+*.env
+.env*

@@ -2,7 +2,8 @@ import { config } from './leads-config.js';
 const form = document.querySelector('#candidate-form');
 const status = document.querySelector('#application-status');
 const button = form.querySelector('button[type="submit"]');
-let widget, busy = false, attempt = null;
+let widget, busy = false, attempt = null, finished = false, uncertain = false;
+const locked = () => busy || finished || uncertain;
 const ready = config.enabled && config.privacyApproved && config.privacyVersion &&
   /^https:\/\//.test(config.endpoint) && config.turnstileSiteKey;
 if (ready) {
@@ -12,7 +13,7 @@ if (ready) {
   script.onload = () => {
     widget = window.turnstile.render('#anti-spam', {
       sitekey: config.turnstileSiteKey, action: 'candidate',
-      callback: () => { button.disabled = busy; },
+      callback: () => { button.disabled = locked(); },
       'expired-callback': () => { button.disabled = true; },
       'error-callback': () => { button.disabled = true; status.textContent = 'Проверка защиты недоступна. Попробуйте позже.'; }
     });
@@ -22,7 +23,9 @@ if (ready) {
 }
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  if (!ready || busy || !form.reportValidity() || !window.turnstile) return;
+  if (!ready || locked() || !form.reportValidity() || !window.turnstile) return;
+  const token = window.turnstile.getResponse(widget);
+  if (!token) { button.disabled = true; status.textContent = 'Пройдите проверку защиты перед отправкой.'; return; }
   const data = Object.fromEntries(new FormData(form));
   const fields = {name:data.name.trim(), contact:data.contact.trim(), city:data.city.trim(), job:data.job.trim(),
     consent:data.consent === 'yes', privacyVersion:config.privacyVersion};
@@ -38,17 +41,29 @@ form.addEventListener('submit', async event => {
     const response = await fetch(config.endpoint, {method:'POST',credentials:'omit',
       headers:{'Content-Type':'application/json'},signal:controller.signal,
       body:JSON.stringify({...fields, requestId:id, website:data.website,
-        turnstileToken:window.turnstile.getResponse(widget)})});
+        turnstileToken:token})});
     const receipt = await response.json();
     if (!response.ok || receipt.saved !== true || receipt.requestId !== id) {
       if (response.status === 429) throw new Error('rate');
+      if (response.status === 403) throw new Error('captcha');
+      if (response.status === 400 || response.status === 413) throw new Error('validation');
+      if (response.status === 503) throw new Error('disabled');
+      if (response.status === 409 && receipt.code === 'DUPLICATE') throw new Error('duplicate');
       throw new Error('unconfirmed');
     }
     status.textContent = 'Заявка сохранена. Повторно отправлять её не нужно.';
-    form.reset(); attempt = null;
+    finished = true; form.reset();
   } catch (error) {
-    status.textContent = error.message === 'rate' ? 'Слишком много запросов. Подождите 10 минут.' :
-      'Подтверждение сохранения не получено. Заявка могла сохраниться. Повторите отправку с теми же данными: повтор будет проверен сервером.';
+    const messages = {
+      rate:'Слишком много запросов. Подождите 10 минут.',
+      captcha:'Проверка защиты не принята. Пройдите её заново перед отправкой.',
+      validation:'Проверьте поля: имя, контакт, город, работу и согласие.',
+      disabled:'Приём заявок временно выключен. Попробуйте позже.',
+      duplicate:'Похожая заявка уже существует. Повторно отправлять её не нужно.'
+    };
+    uncertain = !messages[error.message] || error.message === 'duplicate';
+    status.textContent = messages[error.message] ||
+      'Подтверждение не получено: заявка могла сохраниться. Не отправляйте её повторно и не обновляйте страницу. Для проверки сообщите рекрутеру номер заявки: '+id;
   } finally {
     clearTimeout(timer); busy = false; button.disabled = true;
     window.turnstile.reset(widget);

@@ -25,15 +25,27 @@ async function limitedJSON(req, max) {
   const buf=new Uint8Array(size);let offset=0;for(const c of chunks){buf.set(c,offset);offset+=c.length;}
   return JSON.parse(new TextDecoder().decode(buf));
 }
-async function appsFetch(url, envelope, fetcher) {
-  let response=await fetcher(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(envelope),redirect:'manual',signal:AbortSignal.timeout(20000)});
+export async function appsFetch(url, envelope, fetcher) {
+  let response;
+  try {response=await fetcher(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(envelope),redirect:'manual',signal:AbortSignal.timeout(20000)});}
+  catch {throw Error('APPS_POST_TRANSPORT');}
   if ([301,302,303].includes(response.status)) {
-    const target=new URL(response.headers.get('Location'));
-    if(target.protocol!=='https:' || target.hostname!=='script.googleusercontent.com')throw Error('upstream');
-    response=await fetcher(target.href,{method:'GET',redirect:'error',signal:AbortSignal.timeout(20000)});
+    let target;
+    try {target=new URL(response.headers.get('Location'));}catch {throw Error('APPS_REDIRECT_TARGET');}
+    if(target.protocol!=='https:' || target.hostname!=='script.googleusercontent.com' || target.username || target.password || target.port)throw Error('APPS_REDIRECT_TARGET');
+    try {response=await fetcher(target.href,{method:'GET',redirect:'manual',signal:AbortSignal.timeout(20000)});}
+    catch {throw Error('APPS_CONTENT_TRANSPORT');}
   }
-  if(!response.ok)throw Error('upstream');
-  return response.json();
+  if(!response.ok)throw Error('APPS_HTTP');
+  try {return await limitedJSON(response,16384);}catch {throw Error('APPS_JSON');}
+}
+export async function verifySaveReceipt(receipt,key,requestId,lead,now=Math.floor(Date.now()/1000)) {
+  if(receipt?.protocol!=='mypage-v2'||receipt.saved!==true||receipt.requestId!==requestId)throw Error('APPS_RECEIPT');
+  const proof=receipt.confirmation;
+  if(typeof proof?.payload!=='string'||proof.payload.length>4096||proof.signature!==await hmac(key,'save.'+proof.payload))throw Error('APPS_SIGNATURE');
+  let r;try{r=JSON.parse(proof.payload);}catch{throw Error('APPS_SIGNATURE');}
+  const digest=await hmac(key,JSON.stringify([lead.name,lead.contact,lead.city,lead.job,lead.consent,lead.privacyVersion]));
+  if(r.protocol!=='mypage-save-v1'||r.saved!==true||r.requestId!==requestId||r.digest!==digest||!Number.isInteger(r.verifiedAt)||now-r.verifiedAt<0||now-r.verifiedAt>300)throw Error('APPS_SIGNATURE');
 }
 export async function handle(req, env, fetcher=fetch) {
   const origin='https://ivanzdaniekin.github.io';
@@ -49,7 +61,7 @@ export async function handle(req, env, fetcher=fetch) {
   if(env.ENABLED!=='true' || env.PRIVACY_APPROVED!=='true' || !env.PRIVACY_VERSION ||
       !env.SIGNING_SECRET || !env.HASH_SECRET || !env.TURNSTILE_SECRET || !env.DB ||
       !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(env.APPS_SCRIPT_URL||''))return reply(503,{saved:false});
-  let p;
+  let p, stage='VALIDATE';
   try {
     if(!req.headers.get('Content-Type')?.startsWith('application/json'))return reply(415,{saved:false});
     p=await limitedJSON(req,8192);
@@ -76,13 +88,22 @@ export async function handle(req, env, fetcher=fetch) {
     if(row.saved===1)return reply(200,{saved:true,requestId:p.requestId});
     const payload=JSON.stringify({...lead,requestId:p.requestId});
     const signature=await hmac(env.SIGNING_SECRET,now+'.'+payload);
+    stage='APPS_RESPONSE';
     const receipt=await appsFetch(env.APPS_SCRIPT_URL,{timestamp:now,payload,signature},fetcher);
-    if(receipt.protocol!=='mypage-v2' || receipt.saved!==true || receipt.requestId!==p.requestId) return reply(502,{saved:false});
-    await env.DB.prepare('UPDATE receipts SET saved=1,updated=? WHERE id=?').bind(now,p.requestId).run();
+    if(receipt?.protocol==='mypage-v2'&&receipt.saved===false&&receipt.code==='DUPLICATE'&&receipt.requestId===p.requestId)return reply(409,{saved:false,code:'DUPLICATE'});
+    await verifySaveReceipt(receipt,env.SIGNING_SECRET,p.requestId,lead);
+    stage='D1_CONFIRM';
+    const confirmed=await env.DB.prepare('UPDATE receipts SET saved=1,updated=? WHERE id=? AND digest=? RETURNING id,saved').bind(now,p.requestId,digest).first();
+    if(confirmed?.id!==p.requestId||confirmed.saved!==1)throw Error('D1_CONFIRM');
     return reply(200,{saved:true,requestId:p.requestId});
   } catch(error) {
     if(error.message==='validation')return reply(400,{saved:false});
     if(error.message==='size')return reply(413,{saved:false});
+    // Finite codes only: never log the error object, upstream text, URLs, headers or input.
+    if(stage==='APPS_RESPONSE'||stage==='D1_CONFIRM') {
+      const codes=['APPS_POST_TRANSPORT','APPS_REDIRECT_TARGET','APPS_CONTENT_TRANSPORT','APPS_HTTP','APPS_JSON','APPS_RECEIPT','APPS_SIGNATURE'];
+      console.warn(JSON.stringify({event:'SAVE_CONFIRMATION_FAILED',stage,code:stage==='D1_CONFIRM'?'D1_CONFIRM':codes.includes(error.message)?error.message:'APPS_UNKNOWN',requestId:p.requestId}));
+    }
     return reply(502,{saved:false}); // Unknown write outcome: caller must reuse request ID.
   }
 }

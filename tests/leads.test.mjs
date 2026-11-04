@@ -4,6 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {validate,handle,hmac} from '../backend/worker.mjs';
+import {signedReceipt} from './receipt-fixture.mjs';
 const lead={name:'Test Candidate',contact:'@test_candidate',city:'Test City',job:'Test role',consent:true,privacyVersion:'test-v1'};
 const requestId='00000000-0000-4000-8000-000000000001';
 function setup(saved=true) {
@@ -14,7 +15,7 @@ function setup(saved=true) {
  const fetcher=async(url,opts)=>{
   if(String(url).includes('siteverify'))return Response.json({success:true,hostname:'ivanzdaniekin.github.io',action:'candidate'});
   writes++;const body=JSON.parse(opts.body);assert.equal(body.signature,await hmac(env.SIGNING_SECRET,body.timestamp+'.'+body.payload));
-  return Response.json({saved,protocol:'mypage-v2',requestId:JSON.parse(body.payload).requestId});
+  return Response.json(saved?await signedReceipt(env.SIGNING_SECRET,JSON.parse(body.payload),JSON.parse(body.payload).requestId):{saved:false,protocol:'mypage-v2',requestId:JSON.parse(body.payload).requestId});
  };
  const request=(data={})=>new Request('https://test.invalid/applications',{method:'POST',headers:{Origin:'https://ivanzdaniekin.github.io','CF-Connecting-IP':'192.0.2.1','Content-Type':'application/json'},body:JSON.stringify({...lead,requestId,turnstileToken:'offline-only',...data})});
  return {env,fetcher,request,writes:()=>writes};
@@ -56,7 +57,7 @@ test('Apps Script content redirect uses GET without forwarding signed payload',a
   if(String(url).includes('siteverify'))return Response.json({success:true,hostname:'ivanzdaniekin.github.io',action:'candidate'});
   if(String(url).includes('script.google.com/'))return new Response(null,{status:302,headers:{Location:'https://script.googleusercontent.com/offline'}});
   assert.equal(opts.method,'GET');assert.equal(opts.body,undefined);
-  return Response.json({saved:true,protocol:'mypage-v2',requestId});
+  return Response.json(await signedReceipt(s.env.SIGNING_SECRET,lead,requestId));
  };
  assert.equal((await handle(s.request(),s.env,f)).status,200);
 });

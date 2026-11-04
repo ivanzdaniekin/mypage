@@ -76,7 +76,7 @@ function saveLead(input) {
         if(rows[j][1]!==digest)throw Error('ID_CONFLICT');
         return {saved:rows[j][8]==='SAVED',protocol:'mypage-v2',requestId:p.requestId};
       }
-      if(rows[j][2]===fp&&Date.now()-new Date(rows[j][3]).getTime()<86400000&&rows[j][8]==='SAVED')return {saved:true,protocol:'mypage-v2',requestId:p.requestId};
+      if(rows[j][2]===fp&&Date.now()-new Date(rows[j][3]).getTime()<86400000&&rows[j][8]==='SAVED')return {saved:false,protocol:'mypage-v2',requestId:p.requestId,code:'DUPLICATE'};
     }
     var time=new Date().toISOString(), target=s.leads.getLastRow()+1;
     var r=[p.requestId,digest,fp,time,target,Utilities.base64Encode(JSON.stringify(p),Utilities.Charset.UTF_8),time,p.privacyVersion,'PREPARED','pending',0,0,''];
@@ -96,12 +96,41 @@ function doPost(e) {
     if(!equal_(env.signature,mac_(env.timestamp+'.'+env.payload,key)))throw Error('AUTH');
     var input=JSON.parse(env.payload);
     if(input.operation==='probe'&&props_().getProperty('MYPAGE_ALLOW_PROBE')==='true')return json_({saved:false,protocol:'mypage-v2',nonce:input.nonce});
+    if(input.operation==='receipt'&&props_().getProperty('MYPAGE_ALLOW_PROBE')==='true')return json_(savedReceipt_(input));
     if(props_().getProperty('MYPAGE_ENABLED')!=='true')return json_({saved:false,code:'DISABLED'});
-    return json_(saveLead(input));
+    var result=saveLead(input);
+    if(result.saved===true) {
+      var normalized=validate_(input);
+      var confirmed=JSON.stringify({protocol:'mypage-save-v1',saved:true,requestId:result.requestId,verifiedAt:Math.floor(Date.now()/1000),digest:mac_(JSON.stringify([normalized.name,normalized.contact,normalized.city,normalized.job,normalized.consent,normalized.privacyVersion]),key)});
+      result.confirmation={payload:confirmed,signature:mac_('save.'+confirmed,key)};
+    }
+    return json_(result);
   } catch(err) {
     // No input/exception text in response or logs; HTTP status is not authoritative in ContentService.
     return json_({saved:false,code:'NOT_CONFIRMED'});
   }
+}
+// Explicit read-only recovery operation. Install/deploy only with owner approval.
+// Never call saveLead/recover_, write a cell, or dispatch a notification here.
+function savedReceipt_(input) {
+  if(props_().getProperty('MYPAGE_ENABLED')!=='false'||props_().getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='false')throw Error('DISABLE_FIRST');
+  if(!/^[0-9a-f-]{36}$/i.test(input.requestId||'')||!/^[0-9a-f]{64}$/.test(input.nonce||''))throw Error('INVALID');
+  var lock=LockService.getScriptLock();lock.waitLock(10000);
+  try {
+    var s=sheets_(),rows=s.journal.getDataRange().getValues();
+    var matches=rows.slice(1).filter(function(r){return r[0]===input.requestId;});
+    if(matches.length!==1||matches[0][8]!=='SAVED')throw Error('UNCONFIRMED');
+    var r=matches[0],target=Number(r[4]);
+    if(!Number.isInteger(target)||target<2||target>s.leads.getLastRow())throw Error('ROW_CONFLICT');
+    var p=payload_(r),key=props_().getProperty('MYPAGE_SIGNING_SECRET');
+    if(p.requestId!==input.requestId||p.consent!==true||p.privacyVersion!==r[7]||!Number.isFinite(Date.parse(r[6])))throw Error('UNCONFIRMED');
+    var digest=mac_(JSON.stringify([p.name,p.contact,p.city,p.job,p.consent,p.privacyVersion]),key);
+    if(!equal_(r[1],digest))throw Error('UNCONFIRMED');
+    var current=s.leads.getRange(target,1,1,7).getValues()[0],expected=values_(r);
+    if(current.some(function(v,i){return String(v)!==String(expected[i]);}))throw Error('ROW_CONFLICT');
+    var payload=JSON.stringify({protocol:'mypage-receipt-v1',requestId:r[0],nonce:input.nonce,state:'SAVED',digest:digest,consent:true,consentAt:r[6],privacyVersion:r[7],targetRow:target,verifiedAt:Math.floor(Date.now()/1000)});
+    return {payload:payload,signature:mac_('receipt.'+payload,key)};
+  } finally {lock.releaseLock();}
 }
 function doGet() { return json_({saved:false,code:'POST_REQUIRED'}); }
 function sendTelegram(text) {
@@ -111,9 +140,24 @@ function sendTelegram(text) {
   if(!token||!chat)return {ok:false,code:'CONFIG'};
   try {
     var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+token+'/sendMessage',{method:'post',contentType:'application/json',muteHttpExceptions:true,payload:JSON.stringify({chat_id:chat,text:String(text).slice(0,3500)})});
-    var data=JSON.parse(response.getContentText());
-    return {ok:response.getResponseCode()===200&&data.ok===true,code:data.ok===true?'SENT':'RETRY'};
-  } catch(err) {return {ok:false,code:'RETRY'};}
+    var data=JSON.parse(response.getContentText()),status=response.getResponseCode();
+    if(status===200&&data.ok===true&&Number.isInteger(data.result&&data.result.message_id)&&data.result.message_id>0)return {ok:true,code:'SENT'};
+    // Only an explicit rejection is safe to retry. A timeout/5xx may hide a delivered message.
+    if(status===429&&data.ok===false)return {ok:false,code:'RETRY',retryAfter:Math.min(86400,Math.max(300,Number(data.parameters&&data.parameters.retry_after)||300))};
+    if(status>=400&&status<500&&data.ok===false)return {ok:false,code:'REJECTED'};
+    return {ok:false,code:'UNKNOWN'};
+  } catch(err) {return {ok:false,code:'UNKNOWN'};}
+}
+function notificationText_(r) {
+  var p=payload_(r);return 'Заявка '+r[0]+'\nИмя: '+p.name+'\nКонтакт: '+p.contact+'\nГород: '+p.city+'\nРабота: '+p.job;
+}
+function notifyRow_(s,r,index,oneShot) {
+  var attempt=Number(r[10])+1,next=Date.now()+Math.min(86400000,300000*Math.pow(2,attempt-1));
+  // A crash at any point after this durable reservation requires human reconciliation.
+  s.journal.getRange(index,10,1,4).setValues([['needs_review',attempt,next,'IN_FLIGHT']]);SpreadsheetApp.flush();
+  var res=sendTelegram(notificationText_(r));
+  var status=res.ok?'sent':!oneShot&&res.code==='RETRY'&&attempt<10?'pending':'needs_review';
+  s.journal.getRange(index,10,1,4).setValues([[status,attempt,res.retryAfter?Date.now()+res.retryAfter*1000:next,res.code]]);SpreadsheetApp.flush();
 }
 // Add a 5-minute time trigger ONLY after confirming the destination group and authorizing a test.
 function retryTelegram() {
@@ -124,15 +168,32 @@ function retryTelegram() {
     for(var i=1;i<rows.length&&count<5;i++) {
       var r=rows[i];recover_(s,r,i+1);
       if(r[8]!=='SAVED'||r[9]==='sent'||r[9]==='needs_review'||Number(r[11])>Date.now())continue;
+      if(r[12]==='IN_FLIGHT'){s.journal.getRange(i+1,10).setValue('needs_review');SpreadsheetApp.flush();continue;}
       if(Number(r[10])>=10){s.journal.getRange(i+1,10).setValue('needs_review');SpreadsheetApp.flush();continue;}
-      count++;var attempt=Number(r[10])+1;
-      // Persist attempt and backoff BEFORE network call, so a timed-out execution cannot spin.
-      var next=Date.now()+Math.min(86400000,300000*Math.pow(2,attempt-1));
-      s.journal.getRange(i+1,11,1,3).setValues([[attempt,next,'IN_FLIGHT']]);SpreadsheetApp.flush();
-      var p=payload_(r),res=sendTelegram('Заявка '+r[0]+'\nИмя: '+p.name+'\nКонтакт: '+p.contact+'\nГород: '+p.city+'\nРабота: '+p.job);
-      s.journal.getRange(i+1,10).setValue(res.ok?'sent':attempt>=10?'needs_review':'pending');
-      s.journal.getRange(i+1,13).setValue(res.code);SpreadsheetApp.flush();
+      count++;notifyRow_(s,r,i+1,false);
     }
+  } finally {lock.releaseLock();}
+}
+// Manual, explicitly gated, one-existing-synthetic-message operation. NEVER run automatically.
+function notifyExistingSyntheticOnce() {
+  var p=props_(),id='f20b1b0c-887a-43d4-b671-5a303d09ffc0';
+  if(p.getProperty('MYPAGE_ALLOW_SYNTHETIC_NOTIFICATION')!=='true'||p.getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='true'||p.getProperty('MYPAGE_ENABLED')!=='false'||p.getProperty('MYPAGE_ALLOW_PROBE')!=='false')throw Error('DISABLED');
+  var lock=LockService.getScriptLock();lock.waitLock(10000);
+  try {
+    var s=sheets_(),rows=s.journal.getDataRange().getValues(),matches=[];
+    for(var i=1;i<rows.length;i++) {
+      if(rows[i][8]==='PREPARED'||rows[i][12]==='IN_FLIGHT')throw Error('UNFINISHED');
+      if(rows[i][0]===id)matches.push(i);
+      else if(rows[i][9]==='pending'||rows[i][9]==='needs_review')throw Error('OTHER_PENDING');
+    }
+    if(matches.length!==1)throw Error('UNCONFIRMED');
+    var index=matches[0],r=rows[index],lead=payload_(r);
+    if(r[8]!=='SAVED'||r[9]!=='pending'||Number(r[10])!==0||r[12]!==''||lead.requestId!==id||lead.consent!==true||lead.privacyVersion!==r[7]||lead.name!=='Synthetic Candidate'||lead.contact!=='@synthetic_candidate'||lead.city!=='Synthetic City'||lead.job!=='Synthetic job')throw Error('UNCONFIRMED');
+    if(!equal_(r[1],mac_(JSON.stringify([lead.name,lead.contact,lead.city,lead.job,lead.consent,lead.privacyVersion]),p.getProperty('MYPAGE_SIGNING_SECRET'))))throw Error('UNCONFIRMED');
+    if(!p.getProperty('TELEGRAM_BOT_TOKEN')||p.getProperty('MYPAGE_TELEGRAM_CHAT_ID')!=='-5325144321')throw Error('CONFIG');
+    if(JSON.stringify(s.leads.getRange(Number(r[4]),1,1,7).getValues()[0])!==JSON.stringify(values_(r)))throw Error('ROW_CONFLICT');
+    notifyRow_(s,r,index+1,true);
+    return {requestId:id};
   } finally {lock.releaseLock();}
 }
 // Existing manual function names retained, with explicit safety gates. No test runs automatically.

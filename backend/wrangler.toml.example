@@ -1,4 +1,4 @@
-name = "mypage-applications"
+name = "ivan-praca-leads"
 main = "worker.mjs"
 compatibility_date = "2026-11-01"
 workers_dev = true
@@ -7,11 +7,11 @@ ENABLED = "false"
 TEST_ONLY = "true"
 PRIVACY_APPROVED = "false"
 PRIVACY_VERSION = ""
-APPS_SCRIPT_URL = ""
+# APPS_SCRIPT_URL is an existing Secret, not a plaintext variable.
 [[d1_databases]]
 binding = "DB"
-database_name = "mypage-abuse-protection"
-database_id = "REPLACE_WITH_OWNER_CREATED_FREE_D1_ID"
+database_name = "ivan-praca-leads-db"
+database_id = "7f133043-db01-46b5-8c65-30fe059c1edd"
 [triggers]
 crons = ["0 3 * * *"]
 [observability]

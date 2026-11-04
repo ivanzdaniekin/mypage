@@ -1,19 +1,20 @@
-# Проверки формы
+# Результаты проверки формы — 4 ноября 2026
 
-- База ветки: origin/main 9351cdf (включает слитый SEO PR и файл подтверждения Google).
-- `python3 tools/check_site.py`: PASS. Метаданные, canonical, Person, sitemap, внутренние ссылки/якоря и ресурсы сохранены.
-- `node --check assets/leads.js`, `node --check backend/worker.mjs`: PASS.
-- `node --test tests/leads.test.mjs`: 10 PASS. Offline SQLite и VM Apps Script; валидация, consent, honeypot, лимит размера, Turnstile, атомарные rate limits, idempotency, timeout, отсутствие ложного saved, запрет чужих redirect, корректный Google redirect, literal ячейки и pending Telegram outbox.
-- `tests/form-browser.cjs`: 10 PASS: 5 ширин (320/375/390/768/1440), 5 искусственных транспортных сценариев. Без горизонтального переполнения. В отключённом режиме кнопка заблокирована и Turnstile не загружается. Изолированные ответы saved/negative/wrong-id/429/network failure: успех только при saved:true и совпадающем requestId.
-- Скриншот `/private/tmp/mypage-form-mobile.png` просмотрен: фото, фон, соцссылки и существующие секции сохранены, форма читается. HTML главной ~15 КБ.
-- Фотографии, favicon, SEO title/description, canonical, Person, sitemap, существующие социальные URL и файл подтверждения Google не менялись. CSS дополнен только стилями формы. CTA «Найти работу» намеренно переведён с канала к якорю формы.
-- Реальные Google Sheets/Telegram/Apps Script/Cloudflare не подключались; квоты, реальная CORS-настройка Worker, сценарий Google authorization и live-триггер требуют отдельной проверки после согласования. Это подготовленный код, не работающая интеграция.
+## Локальные проверки текущей ветки
 
-## Полный Code.gs — финальная доработка PR #2
+- `node --test tests/*.test.mjs`: 38 PASS. Подпись запроса, полный Code.gs, подписанная save-confirmation, ContentService 301/302/303 → GET без тела, недоверенный redirect, HTTP/HTML/ограничение JSON, неверные UUID/digest/подпись/время, D1 failure и нулевой RETURNING, идемпотентность и DUPLICATE, отсутствие согласия, формулы и recovery.
+- Telegram в имитации: адресное одноразовое уведомление, защита от чужой очереди, предыдущей попытки и изменённой строки; timeout и сбой после доставки требуют needs_review; sent не отправляется вновь; 429/retry_after, 10 попыток и максимум 5 сообщений за вызов. Ни одного реального сообщения в этом прогоне.
+- `tests/form-browser.cjs`: 15 PASS в локальном Chrome с полностью изолированными имитациями. Пять ширин 320/375/390/768/1440 без горизонтального переполнения и без Turnstile при выключенной форме. Десять сценариев: успех, отрицательный ответ, иной UUID, 429, timeout, не-JSON, CAPTCHA 403, DUPLICATE, пустой токен, двойное нажатие. Проверены receipt-driven успех, блокировка повторов после успеха/неизвестного результата и вывод UUID для сверки.
+- CORS preflight/origin/test-header проверены локальным Worker-контрактом; browser POST/JSON проверен изолированными имитациями. Живой браузерный CORS не объявляется проверенным этим прогоном.
+- SEO/пути/якоря/canonical/JSON-LD/sitemap: `python3 tools/check_site.py` PASS. Существующие изображения, CSS, метаданные, страницы и социальные ссылки этой доработкой не изменены.
+- Синтаксис Worker/frontend и `git diff --check`: PASS.
 
-- `node --test tests/*.test.mjs`: **17 PASS**. Полный Code.gs исполняется в VM с эмуляцией сервисов Google; Worker генерирует реальный HMAC для него. Проверены повтор UUID, lock contention, неопределённый исход append журнала / записи A:G / отметки SAVED, неправильный секрет/consent, размер, формулы, pending/backoff/sent Telegram, подписанный probe и закрытый TEST_ONLY gate.
-- Это офлайн-тесты, не тест реальной Google Sheets транзакции или параллельных Apps Script executions. Ни одного сетевого теста с записью/Telegram не выполнено. Endpoint развёрнутого Apps Script не предоставлен.
-- Подготовлены tests/live-contract-probe.mjs (подписанный Google Web App read-only probe) и tests/live-owner-test.cjs (одна синтетическая отправка после отдельного разрешения и ручного действия владельца).
-- Node syntax checks Worker/live runners — PASS; SEO checker — PASS. Frontend/CSS/images в этой доработке не менялись, предыдущие браузерные проверки остаются применимы.
-- Политика в docs/PRIVACY-RU-PL.md — полный проект, не опубликован. Google Sites и живой Apps Script не изменены.
-- Public flags выключены; TEST_ONLY=true в шаблоне. Не проведены merge, deployment, создание ресурсов или запись секретов в Git.
+## Что подтверждено в облаке ранее
+
+Одна ручная синтетическая заявка в обычном Chrome была сохранена в Лист1 и журнале SAVED; после отдельно разрешённой подписанной read-only сверки квитанция D1 восстановлена до saved=1. Дубликатов нет. Telegram pending, attempts=0. Историческая причина HTTP 502 не доказана сохранёнными логами. Локальное ужесточение протокола не является повторной live-приёмкой.
+
+В текущей разработке cloud-код, флаги, секреты и строки не менялись. Основная форма не публиковалась; merge не выполнялся. Новый backend требует согласованного обновления сначала Apps Script, затем Worker при закрытых флагах. Приём frontend выключен; endpoint/site key публичные и подготовлены, privacyApproved=false, версия политики ожидает утверждения.
+
+## До публикации
+
+См. OWNER-DECISIONS.md: контакт/дата/версия; основание антиспама; доступы/удаление/служебные логи; подтверждённые условия международных передач. Утвердить и опубликовать политику, согласовать backend-установку и отдельное включение. Одно существующее Telegram-уведомление подготовлено, но не отправлено. Ни данные таблицы, ни маркер исходного POST не очищать в рамках запуска.
