@@ -1,4 +1,4 @@
-// No PII logging. The D1 binding stores only HMAC digests, timestamps and receipts.
+// No submitted fields/secrets in own logs; diagnostics use a pseudonymous UUID. D1 stores HMACs and metadata.
 export function validate(p, version) {
   if (!p || p.consent !== true || !version || p.privacyVersion !== version || p.website ||
       !/^[0-9a-f-]{36}$/i.test(p.requestId || '')) throw Error('validation');
@@ -68,6 +68,7 @@ export async function handle(req, env, fetcher=fetch) {
     const lead=validate(p,env.PRIVACY_VERSION);
     if(typeof p.turnstileToken!=='string'||p.turnstileToken.length>2048||!p.turnstileToken)return reply(400,{saved:false});
     const now=Math.floor(Date.now()/1000);
+    if(await env.DB.prepare('SELECT id FROM erasures WHERE id=? AND expires>?').bind(p.requestId,now).first())return reply(410,{saved:false,code:'ERASED'});
     const ip=req.headers.get('CF-Connecting-IP');if(!ip)return reply(503,{saved:false});
     // Atomic counter per key/window. Fixed-window caps: 5/IP/10 min and 100 globally/10 min.
     for(const [key,cap] of [[await hmac(env.HASH_SECRET,ip),5],['global',100]]) {
@@ -82,8 +83,9 @@ export async function handle(req, env, fetcher=fetch) {
     if(!captcha.ok || proof.success!==true || proof.hostname!=='ivanzdaniekin.github.io'||proof.action!=='candidate')return reply(403,{saved:false});
     const digest=await hmac(env.HASH_SECRET,JSON.stringify(lead));
     // Stable contact dedupe in Apps Script is authoritative; D1 protects retries of the same ID.
-    await env.DB.prepare('INSERT INTO receipts (id,digest,saved,updated) VALUES (?,?,0,?) ON CONFLICT(id) DO NOTHING').bind(p.requestId,digest,now).run();
+    await env.DB.prepare('INSERT INTO receipts (id,digest,saved,updated) SELECT ?,?,0,? WHERE NOT EXISTS (SELECT 1 FROM erasures WHERE id=? AND expires>?) ON CONFLICT(id) DO NOTHING').bind(p.requestId,digest,now,p.requestId,now).run();
     const row=await env.DB.prepare('SELECT digest,saved FROM receipts WHERE id=?').bind(p.requestId).first();
+    if(!row)return reply(410,{saved:false,code:'ERASED'});
     if(row.digest!==digest)return reply(409,{saved:false});
     if(row.saved===1)return reply(200,{saved:true,requestId:p.requestId});
     const payload=JSON.stringify({...lead,requestId:p.requestId});
@@ -91,6 +93,7 @@ export async function handle(req, env, fetcher=fetch) {
     stage='APPS_RESPONSE';
     const receipt=await appsFetch(env.APPS_SCRIPT_URL,{timestamp:now,payload,signature},fetcher);
     if(receipt?.protocol==='mypage-v2'&&receipt.saved===false&&receipt.code==='DUPLICATE'&&receipt.requestId===p.requestId)return reply(409,{saved:false,code:'DUPLICATE'});
+    if(receipt?.protocol==='mypage-v2'&&receipt.saved===false&&receipt.code==='ERASED'&&receipt.requestId===p.requestId)return reply(410,{saved:false,code:'ERASED'});
     await verifySaveReceipt(receipt,env.SIGNING_SECRET,p.requestId,lead);
     stage='D1_CONFIRM';
     const confirmed=await env.DB.prepare('UPDATE receipts SET saved=1,updated=? WHERE id=? AND digest=? RETURNING id,saved').bind(now,p.requestId,digest).first();
@@ -110,10 +113,46 @@ export async function handle(req, env, fetcher=fetch) {
 export default {
   fetch(req,env) { return handle(req,env); },
   async scheduled(event,env) {
-    const now=Math.floor(Date.now()/1000);
-    await env.DB.batch([
-      env.DB.prepare('DELETE FROM limits WHERE expires < ?').bind(now),
-      env.DB.prepare('DELETE FROM receipts WHERE updated < ?').bind(now-86400*7)
-    ]);
+    try {
+      const result=await maintenance(event.cron==='0 3 * * *'?{...env,RETENTION_BRIDGE_ENABLED:'false'}:{...env,D1_CLEANUP_ENABLED:'false'});
+      console.info(JSON.stringify({event:'MAINTENANCE',cron:event.cron,disabled:result.disabled===true,processed:result.processed||0}));
+      return result;
+    }catch{console.error('MAINTENANCE_FAILED');throw Error('MAINTENANCE_FAILED');}
   }
 };
+export async function verifyPrivacyReceipt(value,key,nonce,kind,now=Math.floor(Date.now()/1000)) {
+  if(typeof value?.payload!=='string'||value.payload.length>4096||value.signature!==await hmac(key,'privacy.'+value.payload))throw Error('PRIVACY_PROOF');
+  const p=JSON.parse(value.payload);
+  if(p.protocol!=='mypage-privacy-v1'||p.kind!==kind||p.nonce!==nonce||!Number.isInteger(p.at)||Math.abs(now-p.at)>300||!Array.isArray(p.ids)||p.ids.length>20||new Set(p.ids).size!==p.ids.length||p.ids.some(id=>!/^[0-9a-f-]{36}$/i.test(id)))throw Error('PRIVACY_PROOF');
+  return p.ids;
+}
+export async function maintenance(env,fetcher=fetch) {
+  const now=Math.floor(Date.now()/1000);
+  // Installing the real cron while these switches are false is non-destructive.
+  if(env.D1_CLEANUP_ENABLED!=='true'&&env.RETENTION_BRIDGE_ENABLED!=='true')return {disabled:true};
+  if(env.D1_CLEANUP_ENABLED==='true')await env.DB.batch([
+    env.DB.prepare('DELETE FROM limits WHERE expires < ?').bind(now),
+    env.DB.prepare('DELETE FROM receipts WHERE updated < ?').bind(now-86400*7),
+    env.DB.prepare('DELETE FROM erasures WHERE expires < ?').bind(now)
+  ]);
+  if(env.RETENTION_BRIDGE_ENABLED==='true') {
+    if(!env.SIGNING_SECRET||!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(env.APPS_SCRIPT_URL||''))throw Error('PRIVACY_CONFIG');
+    const call=async(kind,ids)=>{
+      const nonce=crypto.randomUUID(),timestamp=Math.floor(Date.now()/1000),payload=JSON.stringify({operation:kind==='tick'?'retentionTick':'retentionAck',nonce,...(ids?{ids}:{})});
+      const value=await appsFetch(env.APPS_SCRIPT_URL,{timestamp,payload,signature:await hmac(env.SIGNING_SECRET,timestamp+'.'+payload)},fetcher);
+      return verifyPrivacyReceipt(value,env.SIGNING_SECRET,nonce,kind);
+    };
+    const ids=await call('tick');
+    if(ids.length) {
+      await env.DB.batch(ids.flatMap(id=>[
+        env.DB.prepare('INSERT INTO erasures (id,expires) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires').bind(id,now+7*86400),
+        env.DB.prepare('DELETE FROM receipts WHERE id=?').bind(id)
+      ]));
+      for(const id of ids)if(await env.DB.prepare('SELECT id FROM receipts WHERE id=?').bind(id).first())throw Error('D1_ERASURE_UNCONFIRMED');
+      const acknowledged=await call('ack',ids);
+      if(JSON.stringify(acknowledged)!==JSON.stringify(ids))throw Error('PRIVACY_ACK');
+    }
+    return {processed:ids.length};
+  }
+  return {cleaned:true};
+}

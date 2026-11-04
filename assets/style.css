@@ -418,4 +418,5 @@ section { scroll-margin-top: 20px; }
 #candidate-form button { font: inherit; cursor: pointer; }
 #candidate-form button:disabled { opacity: .65; cursor: not-allowed; }
 .form-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.section h2, .section h3 { overflow-wrap: anywhere; }
 #anti-spam { min-width: 0; }

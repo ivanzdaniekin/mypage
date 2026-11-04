@@ -9,8 +9,8 @@
 <meta property="og:url" content="https://ivanzdaniekin.github.io/mypage/"><meta property="og:image" content="https://ivanzdaniekin.github.io/mypage/assets/portrait.jpg"><meta property="og:image:alt" content="Ivan Zdaniekin — рекрутер">
 <meta name="theme-color" content="#090909">
 <link rel="icon" href="/mypage/assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&amp;family=Manrope:wght@500;700;800&amp;display=swap" rel="stylesheet">
+
+<link href="/mypage/assets/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="/mypage/assets/style.css">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "@id": "https://ivanzdaniekin.github.io/mypage/#person", "name": "Ivan Zdaniekin", "alternateName": "Иван Зданекин", "url": "https://ivanzdaniekin.github.io/mypage/", "image": "https://ivanzdaniekin.github.io/mypage/assets/portrait.jpg", "jobTitle": "Рекрутер", "sameAs": ["https://t.me/LevelUpComunity", "https://www.instagram.com/ivan.vakansii.pl/", "https://www.facebook.com/profile.php?id=61594301236873", "https://www.tiktok.com/@LevelUp0894", "https://www.linkedin.com/in/ivan-zdaniekin-ab8a70297"]}</script>
 <script type="module" src="/mypage/assets/leads.js"></script>
@@ -32,21 +32,22 @@
 <section class="section" id="application" aria-labelledby="application-title">
 <h2 id="application-title">Заявка на подбор работы</h2>
 <p id="application-status" role="status" aria-live="polite">Отправка пока недоступна: подключение и информация о конфиденциальности готовятся. Данные не отправляются.</p>
-<form id="candidate-form" method="post" action="#application">
+<form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
 <label for="candidate-name">Имя</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
 <label for="candidate-contact">Телефон с кодом страны или Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Например, @username или номер с + и кодом страны.</small>
 <label for="candidate-city">Город</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
 <label for="candidate-job">Интересующая работа</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Укажите направление работы. Не добавляйте паспортные данные, сведения о здоровье или документы.</small>
 <div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
-<label class="consent"><input name="consent" type="checkbox" value="yes" required> Согласен(на) на обработку указанных данных для подбора работы и связи со мной согласно <a href="#privacy">информации о конфиденциальности</a>.</label>
+<label class="consent"><input name="consent" type="checkbox" value="yes" required> Согласен(на) на обработку указанных данных Иваном Зданекиным для подбора работы и связи со мной на срок до 6 месяцев согласно <a href="#privacy">информации о конфиденциальности</a>.</label>
 <div id="anti-spam"></div><button class="button" type="submit" disabled>Отправить заявку</button>
 <noscript><p>Для отправки заявки требуется JavaScript. Сейчас приём заявок ещё не подключён.</p></noscript>
 </form></section>
 <section class="section" id="privacy" aria-labelledby="privacy-title"><h2 id="privacy-title">Конфиденциальность заявок</h2>
-<p>Приём данных через форму пока отключён. Имя, контакт, город и интересующая работа предназначены для подбора работы и связи с кандидатом. Не вводите документы или чувствительные сведения.</p>
-<p>Опубликована <a href="https://sites.google.com/view/ivan-zdaniek-privacy">политика конфиденциальности на русском и польском языках</a> для рекламных форм Meta со сроком хранения до 6 месяцев. Она ещё не адаптирована к форме этого сайта. До запуска будут уточнены данные оператора, контакт для обращений, получатели и порядок удаления данных, отзыва согласия и реализации других прав.</p>
-<p>Планируемые получатели и сервисы: рекрутер, Google Таблица, участники закрытой Telegram-группы и инфраструктура Cloudflare для проверки от спама. До запуска оператор должен уточнить доступ к данным, условия их передачи, включая международную, и полную информацию о правах кандидата. Защита Turnstile пока не загружается.</p>
-<p>Отказ от согласия не отправляет данные. Неотправленные данные формы не сохраняются сайтом в браузерное хранилище.</p></section>
+<p>Контролёр данных — Ivan Zdaniekin, aleja Powstańców Wielkopolskich 51, 85-090 Bydgoszcz, Polska. Контакт и отзыв согласия: <a href="mailto:ivanz.astarta@gmail.com">ivanz.astarta@gmail.com</a>.</p>
+<p>Имя, контакт, город и интересующая работа используются для подбора работы и ответа по вашему согласию, без отдельного согласия на маркетинговые рассылки. Срок — до 6 месяцев; при отзыве согласия данные удаляются раньше, если нет другого действительного основания.</p>
+<p>К таблице Google и закрытой Telegram-группе имеет доступ только владелец. Cloudflare проверяет запросы и защищает от спама; в Telegram планируется передавать только номер заявки. Не вводите документы и чувствительные сведения. Несохранённые поля не помещаются в браузерное хранилище.</p>
+<p>Можно запросить доступ, исправление, удаление, ограничение обработки и, где применимо, переносимость или возражение; можно отозвать согласие и обратиться в UODO. Антиспам не принимает решений о найме.</p>
+<p>Новая редакция RU/PL подготовлена и пока не опубликована. Приём остаётся выключенным до публикации полной информации о сервисах, международных передачах и условиях удаления. <a href="https://sites.google.com/view/ivan-zdaniek-privacy">Прежняя опубликованная политика для форм Meta</a>.</p></section>
 <section class="section" id="contacts"><h2>Контакты и социальные сети</h2><p>В Telegram доступны публикации сообщества Level Up Community. Личная ссылка для отправки заявки пока не указана. Другие мои профили:</p>  <nav class="links" aria-label="Социальные сети Ivan Zdaniekin">
     <a href="https://t.me/LevelUpComunity" class="lnk">
       <span class="ico" style="background:var(--pink)" aria-hidden="true">💬</span>

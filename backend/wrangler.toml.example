@@ -1,4 +1,5 @@
 name = "ivan-praca-leads"
+account_id = "4598a41830fa821ae156d859c2d83dd6"
 main = "worker.mjs"
 compatibility_date = "2026-11-01"
 workers_dev = true
@@ -6,13 +7,18 @@ workers_dev = true
 ENABLED = "false"
 TEST_ONLY = "true"
 PRIVACY_APPROVED = "false"
-PRIVACY_VERSION = ""
+PRIVACY_VERSION = "mypage-privacy-2026-11-04-v1"
+D1_CLEANUP_ENABLED = "false"
+RETENTION_BRIDGE_ENABLED = "false"
 # APPS_SCRIPT_URL is an existing Secret, not a plaintext variable.
 [[d1_databases]]
 binding = "DB"
 database_name = "ivan-praca-leads-db"
 database_id = "7f133043-db01-46b5-8c65-30fe059c1edd"
 [triggers]
-crons = ["0 3 * * *"]
+crons = ["0 3 * * *", "0 * * * *"]
 [observability]
-enabled = false
+enabled = true
+head_sampling_rate = 1
+[observability.logs]
+invocation_logs = false

@@ -5,6 +5,7 @@ const button = form.querySelector('button[type="submit"]');
 let widget, busy = false, attempt = null, finished = false, uncertain = false;
 const locked = () => busy || finished || uncertain;
 const ready = config.enabled && config.privacyApproved && config.privacyVersion &&
+  form.dataset.privacyVersion === config.privacyVersion &&
   /^https:\/\//.test(config.endpoint) && config.turnstileSiteKey;
 if (ready) {
   status.textContent = 'Заполните поля и подтвердите согласие. Не отправляйте документы или чувствительные сведения.';
@@ -49,6 +50,7 @@ form.addEventListener('submit', async event => {
       if (response.status === 400 || response.status === 413) throw new Error('validation');
       if (response.status === 503) throw new Error('disabled');
       if (response.status === 409 && receipt.code === 'DUPLICATE') throw new Error('duplicate');
+      if (response.status === 410 && receipt.code === 'ERASED') throw new Error('erased');
       throw new Error('unconfirmed');
     }
     status.textContent = 'Заявка сохранена. Повторно отправлять её не нужно.';
@@ -59,9 +61,10 @@ form.addEventListener('submit', async event => {
       captcha:'Проверка защиты не принята. Пройдите её заново перед отправкой.',
       validation:'Проверьте поля: имя, контакт, город, работу и согласие.',
       disabled:'Приём заявок временно выключен. Попробуйте позже.',
-      duplicate:'Похожая заявка уже существует. Повторно отправлять её не нужно.'
+      duplicate:'Похожая заявка уже существует. Повторно отправлять её не нужно.',
+      erased:'Эта заявка удалена или согласие отозвано. Не отправляйте её повторно.'
     };
-    uncertain = !messages[error.message] || error.message === 'duplicate';
+    uncertain = !messages[error.message] || error.message === 'duplicate' || error.message === 'erased';
     status.textContent = messages[error.message] ||
       'Подтверждение не получено: заявка могла сохраниться. Не отправляйте её повторно и не обновляйте страницу. Для проверки сообщите рекрутеру номер заявки: '+id;
   } finally {

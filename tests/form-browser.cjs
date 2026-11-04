@@ -25,7 +25,7 @@ const assert=require('node:assert/strict');
   const page=await browser.newPage();let body,posts=0;
   await page.route('**/*',async route=>{
    const u=route.request().url();
-   if(u.endsWith('/assets/leads-config.js'))return route.fulfill({contentType:'text/javascript',body:'export const config={enabled:true,privacyApproved:true,privacyVersion:"test-v1",endpoint:"https://offline.invalid/applications",turnstileSiteKey:"offline"};'});
+   if(u.endsWith('/assets/leads-config.js'))return route.fulfill({contentType:'text/javascript',body:'export const config={enabled:true,privacyApproved:true,privacyVersion:"mypage-privacy-2026-11-04-v1",endpoint:"https://offline.invalid/applications",turnstileSiteKey:"offline"};'});
    if(u.includes('challenges.cloudflare.com'))return route.fulfill({contentType:'text/javascript',body:`let c; window.turnstile={render:(el,opts)=>{c=opts.callback;queueMicrotask(c);return 1},getResponse:()=>${JSON.stringify(mode==='empty-token'?'':'offline')},reset:()=>queueMicrotask(c)};`});
    if(u==='https://offline.invalid/applications'){
     if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':'http://127.0.0.1:8769','Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type'}});
