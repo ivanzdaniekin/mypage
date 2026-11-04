@@ -5,7 +5,7 @@
 ## Русский
 
 ### 1. Кто отвечает за данные и как связаться
-Администратор персональных данных — Ivan Zdaniekin, физическое лицо, осуществляющее подбор кандидатов для работы в Польше. Контакт по вопросам данных и отзыва согласия: ivanz.astarta@gmail.com. Адрес для корреспонденции: ul. Śniadeckich 21, 85-011 Bydgoszcz, Polska.
+Администратор персональных данных — Ivan Zdaniekin, физическое лицо, осуществляющее подбор кандидатов для работы в Польше. Контакт по вопросам данных и отзыва согласия: ivanz.astarta@gmail.com. Адрес для корреспонденции: aleja Powstańców Wielkopolskich 51, 85-090 Bydgoszcz, Polska.
 
 ### 2. Где и какие данные собираются
 Политика охватывает рекламные формы Facebook и Instagram и форму сайта https://ivanzdaniekin.github.io/mypage/. Рекламные формы Meta могут запрашивать имя и фамилию, телефон, город и предпочтительную работу. Форма сайта запрашивает имя, телефон с кодом страны или Telegram, город и интересующую работу. При дальнейшем общении можно добровольно уточнить пожелания по трудоустройству.
@@ -46,7 +46,7 @@
 ## Polski
 
 ### 1. Administrator i kontakt
-Administratorem danych jest Ivan Zdaniekin, osoba fizyczna zajmująca się doborem kandydatów do pracy w Polsce. Kontakt w sprawach danych i wycofania zgody: ivanz.astarta@gmail.com. Adres do korespondencji: ul. Śniadeckich 21, 85-011 Bydgoszcz, Polska.
+Administratorem danych jest Ivan Zdaniekin, osoba fizyczna zajmująca się doborem kandydatów do pracy w Polsce. Kontakt w sprawach danych i wycofania zgody: ivanz.astarta@gmail.com. Adres do korespondencji: aleja Powstańców Wielkopolskich 51, 85-090 Bydgoszcz, Polska.
 
 ### 2. Źródła i zakres danych
 Polityka obejmuje formularze reklamowe Facebooka i Instagrama oraz formularz https://ivanzdaniekin.github.io/mypage/. Formularze Meta mogą zbierać imię i nazwisko, telefon, miasto i preferowaną pracę. Formularz witryny zbiera imię, telefon z numerem kierunkowym lub Telegram, miasto i rodzaj pracy. Podczas dalszej rozmowy można dobrowolnie doprecyzować oczekiwania zawodowe.

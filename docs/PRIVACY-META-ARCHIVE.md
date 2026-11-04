@@ -1,6 +1,6 @@
 # Архив разделов Meta из прежнего проекта политики
 
-Сохранено без изменения содержания перед подготовкой объединённой редакции RU/PL. Не новая опубликованная политика.
+Сохранено перед подготовкой объединённой редакции RU/PL; адрес обновлён по указанию владельца, остальные положения сохранены. Не новая опубликованная политика.
 
 Polityka prywatności i ochrony danych osobowych
 
@@ -14,7 +14,7 @@ Adres e-mail do kontaktu: ivanz.astarta@gmail.com.
 
 Adres do korespondencji:
 
-ul. Śniadeckich 21 85-011 Bydgoszcz
+aleja Powstańców Wielkopolskich 51, 85-090 Bydgoszcz, Polska
 
 .
 
@@ -112,7 +112,7 @@ Polityka prywatności może być aktualizowana w przypadku zmiany zasad przetwar
 
 Почтовый адрес администратора:
 
-ul. Śniadeckich 21 85-011 Bydgoszcz
+aleja Powstańców Wielkopolskich 51, 85-090 Bydgoszcz, Polska
 
 .
 
