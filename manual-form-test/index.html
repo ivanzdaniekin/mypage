@@ -1,0 +1,38 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta http-equiv="Content-Security-Policy" content="form-action 'none'; base-uri 'none'; object-src 'none'"><title>Одна ручная проверка формы — mypage</title><style>
+*{box-sizing:border-box}body{margin:0;background:#090909;color:#f5f5f5;font:16px/1.6 system-ui,sans-serif}main{max-width:660px;margin:24px auto;padding:24px;border:1px solid #555;border-radius:20px;background:#111}label{display:block;margin-top:12px}input:not([type=checkbox]){width:100%;padding:12px;background:#222;color:#eee;border:1px solid #777;border-radius:10px;font:inherit}button{font:inherit;padding:12px;border:1px solid #ff6558;border-radius:12px;background:#aa1c10;color:#fff;margin:12px 0}button:disabled{opacity:.6}#result{padding:12px;border:1px solid #ff6558;border-radius:10px}#widget{margin:16px 0}@media(max-width:400px){main{margin:12px;padding:14px}}
+</style></head><body><main><h1>Одна ручная проверка формы</h1><p>Только синтетические данные. Эта страница НЕ отправляет заявку: она сохраняет файл для локального отправителя. Не вводите личные сведения.</p>
+<label>Имя<input id="name" readonly value="Synthetic Candidate" autocomplete="off"></label>
+<label>Телефон или Telegram<input id="contact" readonly value="@synthetic_candidate" autocomplete="off"></label>
+<label>Город<input id="city" readonly value="Synthetic City" autocomplete="off"></label>
+<label>Интересующая работа<input id="job" readonly value="Synthetic job" autocomplete="off"></label>
+<label><input id="consent" type="checkbox"> Подтверждаю согласие на обработку этой синтетической тестовой заявки. Версия: test-2026-11-04.</label>
+<p>requestId: <span id="request-id"></span></p><p id="result" role="status" aria-live="polite">Проверка ещё не запускалась.</p>
+<button type="button" id="start" disabled>Начать Turnstile вручную</button><div id="widget"></div>
+<button type="button" id="export" disabled>Сохранить одну тестовую заявку в файл</button>
+<p>Сохраните JSON непосредственно в ~/.mypage-private/. Файл содержит краткоживущий токен Turnstile: не открывайте его содержимое в консоли и не отправляйте в чат. Серверного тестового ключа в нём нет. До передачи локальному отправителю установите права файла 0600.</p>
+<noscript>Нужен JavaScript. Отправки заявки здесь нет.</noscript></main><script>
+(() => {
+ const out=document.querySelector('#result'),start=document.querySelector('#start'),save=document.querySelector('#export'),consent=document.querySelector('#consent');
+ document.addEventListener('submit',e=>{e.preventDefault();e.stopImmediatePropagation();},true);
+ if(location.protocol!=='https:'||location.hostname!=='ivanzdaniekin.github.io'){out.textContent='Заблокировано: нужна настоящая HTTPS-страница на ivanzdaniekin.github.io.';return;}
+ const requestId=crypto.randomUUID();document.querySelector('#request-id').textContent=requestId;
+ let token='',receivedAt='',exported=false;
+ function state(){save.disabled=exported||!token||!consent.checked;}
+ consent.addEventListener('change',state);start.disabled=false;
+ start.addEventListener('click',()=>{
+  start.disabled=true;out.textContent='Пройдите настоящий Turnstile вручную.';
+  const script=document.createElement('script');script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';script.async=true;
+  script.onerror=()=>{token='';state();out.textContent='Не удалось загрузить Turnstile. Ничего не отправлено.';};
+  script.onload=()=>window.turnstile.render('#widget',{sitekey:'0x4AAAAAAFzU6aTvGqvJeIwL',action:'candidate',theme:'dark','response-field':false,retry:'never','refresh-expired':'never',callback:value=>{token=value;receivedAt=new Date().toISOString();state();out.textContent='Turnstile пройден. Можно сохранить файл; заявка ещё не отправлена.';},'error-callback':code=>{token='';state();out.textContent='Ошибка Turnstile: '+(/^\d{6}$/.test(String(code))?code:'неизвестная')+'. Ничего не отправлено.';return true;},'expired-callback':()=>{token='';state();out.textContent='Токен истёк. Не отправляйте устаревший файл.';}});
+  document.head.append(script);
+ },{once:true});
+ save.addEventListener('click',()=>{
+  if(exported||!token||!consent.checked)return;
+  const payload={requestId,name:document.querySelector('#name').value.trim(),contact:document.querySelector('#contact').value.trim(),city:document.querySelector('#city').value.trim(),job:document.querySelector('#job').value.trim(),consent:true,privacyVersion:'test-2026-11-04',website:'',turnstileToken:token,tokenReceivedAt:receivedAt};
+  exported=true;state();
+  const url=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:'application/json'}));
+  const link=document.createElement('a');link.href=url;link.download='mypage-manual-'+requestId+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  token='';out.textContent='Файл подготовлен. Заявка НЕ отправлена. Не перезагружайте страницу и не создавайте вторую попытку.';
+ });
+})();
+</script></body></html>
