@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta http-equiv="Content-Security-Policy" content="form-action 'none'; base-uri 'none'; object-src 'none'">
+<title>Ручная диагностика Turnstile — mypage</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090909;color:#f5f5f5;font:16px/1.6 system-ui,sans-serif}main{max-width:660px;margin:32px auto;padding:24px;border:1px solid #555;border-radius:20px;background:#111}h1{font-size:25px;line-height:1.4}fieldset{border:1px solid #555;border-radius:14px;margin:20px 0;padding:18px}label{display:block;margin-top:12px}input,textarea{display:block;width:100%;padding:12px;background:#222;color:#ddd;border:1px solid #777;border-radius:10px;font:inherit}button{padding:12px 18px;border:1px solid #ff6558;background:#aa1c10;color:white;border-radius:12px;font:inherit;margin:12px 0}button:disabled{opacity:.55;cursor:not-allowed}#widget{margin:18px 0;min-height:70px}#result{padding:14px;border:1px solid #ff6558;border-radius:12px}small{color:#ccc}@media(max-width:400px){main{margin:12px;padding:14px}}
+</style></head><body><main>
+<h1>Ручная диагностика Turnstile</h1>
+<p>Это отдельная диагностическая страница. Заявки здесь не принимаются. Не вводите персональные данные.</p>
+<fieldset disabled><legend>Поля существующей формы — ввод и отправка отключены</legend>
+<label>Имя<input disabled autocomplete="off"></label>
+<label>Телефон или Telegram<input disabled autocomplete="off"></label>
+<label>Город<input disabled autocomplete="off"></label>
+<label>Интересующая работа<textarea disabled rows="2"></textarea></label>
+<button type="button" disabled>Отправить заявку — отключено</button>
+</fieldset>
+<p id="result" role="status" aria-live="polite">Проверка ещё не запускалась.</p>
+<button id="start" type="button" disabled>Начать ручную проверку Turnstile</button>
+<div id="widget"></div>
+<p><small>Проверяется только получение настоящего результата Turnstile в браузере. Серверная Siteverify, Worker, Google Таблица и Telegram здесь не вызываются. Токен не показывается и не отправляется обработчику заявок.</small></p>
+<noscript>Для Turnstile требуется JavaScript.</noscript>
+<script>
+(() => {
+  const expectedHost = 'ivanzdaniekin.github.io';
+  const sitekey = '0x4AAAAAAFzU6aTvGqvJeIwL';
+  const result = document.querySelector('#result');
+  const start = document.querySelector('#start');
+  // Native form submission is prohibited by CSP and this page contains no form element.
+  document.addEventListener('submit', e => { e.preventDefault(); e.stopImmediatePropagation(); }, true);
+  if(location.protocol !== 'https:' || location.hostname !== expectedHost) {
+    result.textContent = 'Проверка заблокирована: нужен настоящий HTTPS-адрес на разрешённом hostname. file:// и localhost не подходят.';
+    return;
+  }
+  start.disabled = false;
+  start.addEventListener('click', () => {
+    start.disabled = true;
+    result.textContent = 'Загружается настоящий Turnstile. При необходимости выполните проверку вручную.';
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onerror = () => { result.textContent = 'Скрипт Turnstile не загрузился. Проверка не пройдена.'; };
+    script.onload = () => {
+      try {
+        window.turnstile.render('#widget', {
+          sitekey, action: 'candidate', theme: 'dark', 'response-field': false,
+          retry: 'never', 'refresh-expired': 'never',
+          callback: () => { result.textContent = 'Turnstile пройден: браузер получил результат. Заявка НЕ отправлена. Серверная проверка токена НЕ выполнялась.'; },
+          'error-callback': code => {
+            const safeCode = /^\d{6}$/.test(String(code)) ? String(code) : 'неизвестный';
+            result.textContent = 'Ошибка Turnstile: ' + safeCode + '. Заявка НЕ отправлена.';
+            return true;
+          },
+          'expired-callback': () => { result.textContent = 'Результат Turnstile истёк. Заявка НЕ отправлена.'; },
+          'timeout-callback': () => { result.textContent = 'Время проверки Turnstile истекло. Заявка НЕ отправлена.'; }
+        });
+      } catch (_) { result.textContent = 'Не удалось создать виджет. Проверка не пройдена.'; }
+    };
+    document.head.append(script);
+  }, {once:true});
+})();
+</script></main></body></html>

@@ -9,7 +9,8 @@ class Parser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True); self.tags=[]
     def handle_starttag(self,tag,attrs): self.tags.append((tag,dict(attrs)))
-pages=list(ROOT.glob('index.html'))+list(ROOT.glob('*/index.html'))
+diagnostics={'manual-form-test','turnstile-check'}
+pages=[ROOT/'index.html']+[p for p in ROOT.glob('*/index.html') if p.parent.name not in diagnostics]
 parsed={}
 policy_page=ROOT/'privacy/index.html'
 for p in pages:
