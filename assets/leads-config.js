@@ -4,5 +4,5 @@ export const config = Object.freeze({
   endpoint: 'https://ivan-praca-leads.ivan-zdaniekin.workers.dev/applications',
   turnstileSiteKey: '0x4AAAAAAFzU6aTvGqvJeIwL',
   privacyApproved: true,
-  privacyVersion: 'mypage-privacy-2026-11-04-v1'
+  privacyVersion: 'mypage-privacy-2026-11-05-v2'
 });

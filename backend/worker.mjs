@@ -65,7 +65,10 @@ export async function handle(req, env, fetcher=fetch) {
   try {
     if(!req.headers.get('Content-Type')?.startsWith('application/json'))return reply(415,{saved:false});
     p=await limitedJSON(req,8192);
-    const lead=validate(p,env.PRIVACY_VERSION);
+    // Accept the previous site's consent version during rollout. Only v2 can enable detailed notices.
+    const version = env.PRIVACY_VERSION === 'mypage-privacy-2026-11-04-v1' &&
+      p?.privacyVersion === 'mypage-privacy-2026-11-05-v2' ? p.privacyVersion : env.PRIVACY_VERSION;
+    const lead=validate(p,version);
     if(typeof p.turnstileToken!=='string'||p.turnstileToken.length>2048||!p.turnstileToken)return reply(400,{saved:false});
     const now=Math.floor(Date.now()/1000);
     if(await env.DB.prepare('SELECT id FROM erasures WHERE id=? AND expires>?').bind(p.requestId,now).first())return reply(410,{saved:false,code:'ERASED'});

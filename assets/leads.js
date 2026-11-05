@@ -1,4 +1,4 @@
-import { config } from './leads-config.js';
+import { config } from './leads-config.js?v=telegram-v2';
 const dialog = document.querySelector('#application');
 const closeButton = dialog.querySelector('.application-close');
 const applicationHash = '#application';

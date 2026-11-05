@@ -64,7 +64,7 @@ test('browser CORS preflight and private test-header contract',async()=>{
  const forbidden=s.request({},'OPTIONS');forbidden.headers.set('Origin','https://evil.invalid');assert.equal((await handle(forbidden,s.env,s.fetcher)).status,403);
  assert.deepEqual(s.counts(),{posts:0,gets:0});
 });
-function notificationSetup(){const h=harness();h.post(lead);h.props.MYPAGE_ENABLED='false';h.props.MYPAGE_ALLOW_PROBE='false';h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';h.props.MYPAGE_ALLOW_SYNTHETIC_NOTIFICATION='true';h.props.TELEGRAM_BOT_TOKEN='offline';h.props.MYPAGE_TELEGRAM_CHAT_ID='-5325144321';return h;}
+function notificationSetup(){const h=harness();h.post(lead);h.props.MYPAGE_ENABLED='false';h.props.MYPAGE_ALLOW_PROBE='false';h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';h.props.MYPAGE_TELEGRAM_ACTIVATED_AT=new Date(Date.now()-60000).toISOString();h.props.MYPAGE_ALLOW_SYNTHETIC_NOTIFICATION='true';h.props.TELEGRAM_BOT_TOKEN='offline';h.props.MYPAGE_TELEGRAM_CHAT_ID='-5325144321';return h;}
 test('targeted synthetic notification is gated, one-shot and leaves lead rows unchanged',()=>{
  const h=notificationSetup(),before=JSON.stringify(h.data['Лист1']);h.telegramOK();h.ctx.notifyExistingSyntheticOnce();
  assert.equal(h.notifications(),1);assert.equal(h.data.MypageJournalV2[1][9],'sent');assert.equal(h.data.MypageJournalV2[1][10],1);assert.throws(()=>h.ctx.notifyExistingSyntheticOnce());h.ctx.retryTelegram();assert.equal(h.notifications(),1);assert.equal(JSON.stringify(h.data['Лист1']),before);
@@ -93,6 +93,86 @@ test('queue limits work, explicit rejection stops and 429 observes retry_after',
 test('queue sends at most five messages per run and skips sent records',()=>{
  const h=harness();
  for(let i=0;i<6;i++)assert.equal(h.post({...lead,requestId:'00000000-0000-4000-8000-'+String(i+10).padStart(12,'0'),job:'Synthetic job '+i}).saved,true);
- h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';h.props.TELEGRAM_BOT_TOKEN='offline';h.props.MYPAGE_TELEGRAM_CHAT_ID='offline';h.telegramOK();
+ h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';h.props.MYPAGE_TELEGRAM_ACTIVATED_AT=new Date(Date.now()-60000).toISOString();h.props.TELEGRAM_BOT_TOKEN='offline';h.props.MYPAGE_TELEGRAM_CHAT_ID='offline';h.telegramOK();
  h.ctx.retryTelegram();assert.equal(h.notifications(),5);h.ctx.retryTelegram();assert.equal(h.notifications(),6);h.ctx.retryTelegram();assert.equal(h.notifications(),6);
+});
+
+test('Telegram activation excludes the backlog and requires a saved row strictly after the cutoff',()=>{
+ const h=harness();
+ // post() signs with the real clock, so keep the mock clock close to it.
+ let now=Date.now()-1000;
+ h.ctx.Date=class extends Date {constructor(...args){super(...(args.length?args:[now]));}static now(){return now;}};
+ h.props.TELEGRAM_BOT_TOKEN='offline';
+ h.props.MYPAGE_TELEGRAM_CHAT_ID='-5325144321';
+ h.telegramOK();
+ const add=i=>h.post({...lead,requestId:'00000000-0000-4000-8000-'+String(i).padStart(12,'0'),job:'Synthetic job '+i});
+ assert.equal(add(11).saved,true);
+ now++;
+ const old=h.data.MypageJournalV2[1].slice();
+ h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';
+ h.ctx.retryTelegram();
+ assert.equal(h.notifications(),0);
+ h.props.MYPAGE_NOTIFICATIONS_ENABLED='false';
+ h.ctx.activateTelegramForNewApplications();
+ assert.equal(h.props.MYPAGE_TELEGRAM_ACTIVATED_AT,new Date(now).toISOString());
+ assert.equal(h.props.MYPAGE_NOTIFICATIONS_ENABLED,'true');
+ assert.equal(add(12).saved,true);
+ now++;
+ assert.equal(add(13).saved,true);
+ assert.equal(add(14).saved,true);
+ h.data.MypageJournalV2[4][8]='PREPARED';
+ h.ctx.retryTelegram();
+ h.ctx.retryTelegram();
+ assert.equal(h.notifications(),1);
+ assert.deepEqual(h.data.MypageJournalV2[1],old);
+ assert.equal(h.data.MypageJournalV2[2][9],'pending');
+ assert.equal(h.data.MypageJournalV2[3][9],'sent');
+ assert.equal(h.data.MypageJournalV2[4][8],'PREPARED');
+});
+
+test('Telegram details require new consent, the launch boundary and the existing group',()=>{
+ const version='mypage-privacy-2026-11-05-v2';
+ for(const mode of ['ready','old-policy','old-date','no-opt-in','other-chat']){
+  const h=harness();
+  h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';
+  h.props.MYPAGE_TELEGRAM_ACTIVATED_AT=new Date(Date.now()-60000).toISOString();
+  h.props.MYPAGE_TELEGRAM_DETAILS_FROM=new Date(Date.now()+(mode==='old-date'?60000:-30000)).toISOString();
+  if(mode==='no-opt-in')delete h.props.MYPAGE_TELEGRAM_DETAILS_FROM;
+  h.props.MYPAGE_PRIVACY_VERSION='mypage-privacy-2026-11-04-v1';
+  h.props.MYPAGE_TELEGRAM_CHAT_ID=mode==='other-chat'?'offline-other':'-5325144321';
+  h.props.TELEGRAM_BOT_TOKEN='offline';
+  const messages=[];
+  h.ctx.UrlFetchApp.fetch=(_url,options)=>{
+   messages.push(JSON.parse(options.payload));
+   return {getResponseCode:()=>200,getContentText:()=>'{"ok":true,"result":{"message_id":1}}'};
+  };
+  const entry={...lead,contact:'+48123456789',privacyVersion:mode==='old-policy'?h.props.MYPAGE_PRIVACY_VERSION:version};
+  assert.equal(h.post(entry).saved,true);
+  h.ctx.retryTelegram();
+  h.ctx.retryTelegram();
+  assert.equal(messages.length,1,mode);
+  assert.ok(messages[0].text.includes(entry.requestId),mode);
+  for(const field of ['name','contact','city','job']){
+   assert.equal(messages[0].text.includes(entry[field]),mode==='ready',mode+' '+field);
+  }
+  assert.equal(messages[0].protect_content,mode==='ready'?true:undefined,mode);
+ }
+});
+
+test('both consent versions reach the signed Apps Script receipt during rollout',async()=>{
+ const s=service();
+ const old='mypage-privacy-2026-11-04-v1',next='mypage-privacy-2026-11-05-v2';
+ s.env.PRIVACY_VERSION=old;
+ s.h.props.MYPAGE_PRIVACY_VERSION=old;
+ for(const [index,privacyVersion] of [old,next].entries()){
+  const requestId='00000000-0000-4000-8000-'+String(index+90).padStart(12,'0');
+  const request=s.request({requestId,privacyVersion,job:'Consent rollout '+index});
+  const response=await handle(request,s.env,s.fetcher);
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).saved,true);
+ }
+ assert.equal(s.h.data.MypageJournalV2[1][7],old);
+ assert.equal(s.h.data.MypageJournalV2[2][7],next);
+ const unknown=await handle(s.request({privacyVersion:'unsupported'}),s.env,s.fetcher);
+ assert.equal(unknown.status,400);
 });

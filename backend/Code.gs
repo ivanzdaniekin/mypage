@@ -4,13 +4,15 @@
  * physically while a PREPARED journal record exists (filter views are safe).
  */
 var MYPAGE_POLICY_VERSION='mypage-privacy-2026-11-04-v1';
+var MYPAGE_TELEGRAM_POLICY_VERSION='mypage-privacy-2026-11-05-v2';
 var JOURNAL_HEADERS = ['request_id','digest','fingerprint','created','target_row','payload_b64','consent_at','privacy_version','state','telegram_status','attempts','next_attempt','last_code'];
 function props_() { return PropertiesService.getScriptProperties(); }
 function json_(p) { return ContentService.createTextOutput(JSON.stringify(p)).setMimeType(ContentService.MimeType.JSON); }
 function mac_(s,key) { return Utilities.computeHmacSha256Signature(s,key,Utilities.Charset.UTF_8).map(function(b){return ('0'+((b+256)%256).toString(16)).slice(-2);}).join(''); }
 function equal_(a,b) { if(typeof a!=='string'||a.length!==64||b.length!==64)return false;var d=0;for(var i=0;i<64;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0; }
 function validate_(p) {
-  var version=props_().getProperty('MYPAGE_PRIVACY_VERSION');
+  var configured=props_().getProperty('MYPAGE_PRIVACY_VERSION');
+  var version=configured===MYPAGE_POLICY_VERSION&&p&&p.privacyVersion===MYPAGE_TELEGRAM_POLICY_VERSION?MYPAGE_TELEGRAM_POLICY_VERSION:configured;
   if(!p||p.consent!==true||!version||p.privacyVersion!==version||!/^[0-9a-f-]{36}$/i.test(p.requestId||''))throw Error('INVALID');
   var out={};
   [['name',2,80],['contact',5,80],['city',2,100],['job',2,500]].forEach(function(f){
@@ -138,13 +140,15 @@ function savedReceipt_(input) {
   } finally {lock.releaseLock();}
 }
 function doGet() { return json_({saved:false,code:'POST_REQUIRED'}); }
-function sendTelegram(text) {
+function sendTelegram(text, detailed) {
   var p=props_();
   if(p.getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='true')return {ok:false,code:'DISABLED'};
   var token=p.getProperty('TELEGRAM_BOT_TOKEN'),chat=p.getProperty('MYPAGE_TELEGRAM_CHAT_ID');
-  if(!token||!chat)return {ok:false,code:'CONFIG'};
+  if(!token||!chat||(detailed&&chat!=='-5325144321'))return {ok:false,code:'CONFIG'};
   try {
-    var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+token+'/sendMessage',{method:'post',contentType:'application/json',muteHttpExceptions:true,payload:JSON.stringify({chat_id:chat,text:String(text).slice(0,3500)})});
+    var message={chat_id:chat,text:String(text).slice(0,3500)};
+    if(detailed){message.protect_content=true;message.link_preview_options={is_disabled:true};}
+    var response=UrlFetchApp.fetch('https://api.telegram.org/bot'+token+'/sendMessage',{method:'post',contentType:'application/json',muteHttpExceptions:true,payload:JSON.stringify(message)});
     var data=JSON.parse(response.getContentText()),status=response.getResponseCode();
     if(status===200&&data.ok===true&&Number.isInteger(data.result&&data.result.message_id)&&data.result.message_id>0)return {ok:true,code:'SENT',messageId:data.result.message_id};
     // Only an explicit rejection is safe to retry. A timeout/5xx may hide a delivered message.
@@ -156,27 +160,88 @@ function sendTelegram(text) {
 function notificationText_(r) {
   return 'Новая заявка '+r[0]+'. Подробности доступны владельцу в закрытой таблице.';
 }
+function detailedNotificationText_(r) {
+  var application=payload_(r);
+  return [
+    '📩 НОВАЯ ЗАЯВКА С САЙТА',
+    '',
+    '👤 Имя: '+application.name,
+    '📱 Контакт: '+application.contact,
+    '📍 Город: '+application.city,
+    '💼 Работа: '+application.job,
+    '',
+    'Статус: Новая',
+    'Номер заявки: '+r[0]
+  ].join('\n');
+}
+function allowsTelegramDetails_(r) {
+  var p=props_();
+  var start=Date.parse(p.getProperty('MYPAGE_TELEGRAM_DETAILS_FROM')||'');
+  var received=Date.parse(r[3]),consented=Date.parse(r[6]);
+  return r[7]===MYPAGE_TELEGRAM_POLICY_VERSION&&Number.isFinite(start)&&received>start&&consented>start&&
+    p.getProperty('MYPAGE_TELEGRAM_CHAT_ID')==='-5325144321';
+}
 function notifyRow_(s,r,index,oneShot) {
+  var detailed=!oneShot&&allowsTelegramDetails_(r);
+  var text=detailed?detailedNotificationText_(r):notificationText_(r);
   var privacy=reserveTelegramPrivacy_(r);
   var attempt=Number(r[10])+1,next=Date.now()+Math.min(86400000,300000*Math.pow(2,attempt-1));
   // A crash at any point after this durable reservation requires human reconciliation.
   s.journal.getRange(index,10,1,4).setValues([['needs_review',attempt,next,'IN_FLIGHT']]);SpreadsheetApp.flush();
-  var res=sendTelegram(notificationText_(r));
+  var res=sendTelegram(text,detailed);
   if(res.ok){privacy.row[5]=res.messageId;privacy.row[6]=Date.now();privacy.row[7]='sent';}
   else if(res.code==='RETRY'||res.code==='REJECTED'||res.code==='CONFIG'||res.code==='DISABLED')privacy.row[7]='rejected';
   privacyWrite_(privacy);
   var status=res.ok?'sent':!oneShot&&res.code==='RETRY'&&attempt<10?'pending':'needs_review';
   s.journal.getRange(index,10,1,4).setValues([[status,attempt,res.retryAfter?Date.now()+res.retryAfter*1000:next,res.code]]);SpreadsheetApp.flush();
 }
-// Add a 5-minute time trigger ONLY after confirming the destination group and authorizing a test.
+// Run once from the editor after the five-minute trigger has been installed.
+function activateTelegramForNewApplications() {
+  var lock=LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var p=props_();
+    if(p.getProperty('MYPAGE_ENABLED')!=='true'||
+       p.getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='false'||
+       p.getProperty('MYPAGE_ALLOW_SYNTHETIC_NOTIFICATION')==='true'||
+       !p.getProperty('TELEGRAM_BOT_TOKEN')||
+       p.getProperty('MYPAGE_TELEGRAM_CHAT_ID')!=='-5325144321')throw Error('TELEGRAM_ACTIVATION_CONFIG');
+    // saveLead uses the same lock, so no application can be saved between
+    // recording this boundary and enabling the queue.
+    var activatedAt=new Date().toISOString();
+    p.setProperties({MYPAGE_TELEGRAM_ACTIVATED_AT:activatedAt,MYPAGE_NOTIFICATIONS_ENABLED:'true'},false);
+    console.log('Telegram activation UTC: '+activatedAt);
+  } finally {lock.releaseLock();}
+}
+// Run once after the updated consent form and policy are live.
+function activateDetailedTelegram() {
+  var lock=LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var p=props_();
+    if(p.getProperty('MYPAGE_ENABLED')!=='true'||
+       p.getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='true'||
+       p.getProperty('MYPAGE_PRIVACY_VERSION')!==MYPAGE_POLICY_VERSION||
+       !Number.isFinite(Date.parse(p.getProperty('MYPAGE_TELEGRAM_ACTIVATED_AT')||''))||
+       p.getProperty('MYPAGE_TELEGRAM_CHAT_ID')!=='-5325144321')throw Error('TELEGRAM_ACTIVATION_CONFIG');
+    if(!p.getProperty('MYPAGE_TELEGRAM_DETAILS_FROM')){
+      p.setProperty('MYPAGE_TELEGRAM_DETAILS_FROM',new Date().toISOString());
+    }
+  } finally {lock.releaseLock();}
+}
 function retryTelegram() {
-  if(props_().getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='true')return;
   var lock=LockService.getScriptLock();if(!lock.tryLock(1000))return;
   try {
+    var p=props_();
+    if(p.getProperty('MYPAGE_NOTIFICATIONS_ENABLED')!=='true')return;
+    var cutoff=Date.parse(p.getProperty('MYPAGE_TELEGRAM_ACTIVATED_AT')||'');
+    if(!Number.isFinite(cutoff))return;
     var s=sheets_(),rows=s.journal.getDataRange().getValues(),count=0;
     for(var i=1;i<rows.length&&count<5;i++) {
-      var r=rows[i];recover_(s,r,i+1);
-      if(r[8]!=='SAVED'||r[9]==='sent'||r[9]==='needs_review'||Number(r[11])>Date.now())continue;
+      var r=rows[i];
+      var received=Date.parse(r[3]);
+      if(!Number.isFinite(received)||received<=cutoff)continue;
+      if(r[8]!=='SAVED'||r[9]!=='pending'||Number(r[11])>Date.now())continue;
       if(r[12]==='IN_FLIGHT'){s.journal.getRange(i+1,10).setValue('needs_review');SpreadsheetApp.flush();continue;}
       if(Number(r[10])>=10){s.journal.getRange(i+1,10).setValue('needs_review');SpreadsheetApp.flush();continue;}
       count++;notifyRow_(s,r,i+1,false);

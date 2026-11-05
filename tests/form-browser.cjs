@@ -118,7 +118,7 @@ const assert=require('node:assert/strict');
  }
  // Intercept all nonlocal traffic. These receipts never reach a server.
  const {validate}=await import('../backend/worker.mjs');
- const version='mypage-privacy-2026-11-04-v1';
+ const version='mypage-privacy-2026-11-05-v2';
  const successModes=['saved','double-click','multiline','contact-ru','contact-uk','contact-other'];
  const cases=[...successModes,'negative','wrong-id','rate','timeout','bad-json','captcha','duplicate','validation','upstream','empty-token','expired'];
  for(const mode of cases){
@@ -129,7 +129,7 @@ const assert=require('node:assert/strict');
   const allowOrigin={'Access-Control-Allow-Origin':origin};
   await page.route('**/*',async route=>{
    const request=route.request(), u=request.url();
-   if(u.endsWith('/assets/leads-config.js'))return route.fulfill({
+   if(new URL(u).pathname.endsWith('/assets/leads-config.js'))return route.fulfill({
     contentType:'text/javascript',
     body:`export const config={enabled:true,privacyApproved:true,privacyVersion:"${version}",endpoint:"https://offline.invalid/applications",turnstileSiteKey:"offline"};`
    });
