@@ -15,32 +15,39 @@
 <link href="/mypage/assets/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="/mypage/assets/style.css">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "@id": "https://ivanzdaniekin.github.io/mypage/#person", "name": "Ivan Zdaniekin", "alternateName": "Іван Зданекін", "url": "https://ivanzdaniekin.github.io/mypage/", "image": "https://ivanzdaniekin.github.io/mypage/assets/portrait.jpg", "jobTitle": "Рекрутер", "sameAs": ["https://t.me/LevelUpComunity", "https://www.instagram.com/ivan.vakansii.pl/", "https://www.facebook.com/profile.php?id=61594301236873", "https://www.tiktok.com/@LevelUp0894", "https://www.linkedin.com/in/ivan-zdaniekin-ab8a70297"]}</script>
-</head><body><a class="skip" href="#content">До вмісту</a><main class="wrap" id="content">
+<script type="module" src="/mypage/assets/leads.js"></script>
+</head><body><a class="skip" href="#content">До вмісту</a><main class="wrap compact-page" id="content">
 <header class="section">
 <nav class="language-switch" aria-label="Мова сторінки"><a href="/mypage/vakansii/" lang="ru" hreflang="ru">Русский</a><a href="/mypage/uk/vakansii/" lang="uk" hreflang="uk" aria-current="page">Українська</a></nav>
 <p><a href="/mypage/uk/">Головна</a> / Вакансії</p>
 <h1 class="name">Вакансії в Польщі: як дізнатися про доступну роботу</h1>
 <p>Залиште заявку, щоб обговорити пошук роботи в Польщі. Я врахую ваш досвід, бажану сферу, місце й графік. Якщо буде відповідна пропозиція, зможемо обговорити її умови.</p>
-<div class="ctas"><a class="button" href="/mypage/uk/#application">Подати заявку на підбір роботи</a></div>
+<div class="ctas"><a class="button" href="#application" aria-haspopup="dialog">Підібрати роботу</a></div>
 </header>
 <section class="section">
-<h2>Як відбувається підбір</h2>
-<ol>
-  <li>Заповніть форму та залиште телефон або контакт у Telegram.</li>
-  <li>Розкажіть, де й ким хочете працювати. Вкажіть, які умови обов’язкові, а в яких готові розглянути варіанти.</li>
-  <li>Якщо є відповідна пропозиція, уточніть обов’язки, вимоги та порядок відгуку.</li>
+<h2>Як дізнатися про відповідну вакансію</h2>
+<ol class="vacancy-steps">
+  <li><strong>Залиште заявку.</strong> Вкажіть телефон або Telegram, бажану роботу, місто, досвід і рівень польської. Додайте зручний графік, дату початку й зазначте, чи потрібне житло.</li>
+  <li><strong>Обговоріть пропозицію.</strong> Якщо знайдеться відповідний варіант, уточніть обов’язки, вимоги та порядок відгуку.</li>
+  <li><strong>Перевірте умови.</strong> Запитайте точну адресу й вид договору, ставку brutto чи netto, період оплати й можливі відрахування. Якщо пропонують житло, уточніть вартість, умови заселення та дорогу до роботи.</li>
 </ol>
-<h2>Що вказати в заявці</h2>
-<ul>
-  <li>Бажане місто або регіон і готовність до переїзду.</li>
-  <li>Досвід, навички та рівень польської мови.</li>
-  <li>Зручний графік і дата, з якої можете почати.</li>
-  <li>Чи потрібні житло й транспорт до роботи.</li>
-</ul>
-<p>Приклад опису побажань: «Шукаю роботу у сфері обслуговування. Розглядаю різні міста, якщо можна дістатися до роботи громадським транспортом. Бажано працювати вдень».</p>
-<h2>Що перевірити перед відгуком</h2>
-<p>Попросіть опис обов’язків, точну адресу, вид договору та ставку. Уточніть, чи вказано оплату brutto або netto, за який період її нараховують і які можливі відрахування. Якщо пропонують житло, перевірте його вартість та умови заселення.</p>
+<p>Приклад для заявки: «Шукаю роботу у сфері обслуговування, можу почати за тиждень. Бажано працювати вдень. Розглядаю переїзд, якщо є житло й транспорт до роботи».</p>
 <p><a href="/mypage/uk/#cities">Робота по всій Польщі</a> · <a href="https://t.me/i_One_Zd">Зв’язок для роботодавців</a></p>
 </section>
 <footer class="fine"><a href="/mypage/uk/">Ivan Zdaniekin</a> · Робота та підбір кандидатів у Польщі</footer>
+<dialog class="application-dialog" id="application" aria-labelledby="application-title">
+<button class="application-close" type="button" aria-label="Закрити форму" autofocus>×</button>
+<h2 id="application-title">Заявка на підбір роботи</h2>
+<p id="application-status" role="status" aria-live="polite">Завантажується форма заявки.</p>
+<form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
+<label for="candidate-name">Ім’я</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
+<label for="candidate-contact">Телефон із кодом країни або Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Наприклад, @username або номер із + і кодом країни.</small>
+<label for="candidate-city">Місто</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
+<label for="candidate-job">Яку роботу ви шукаєте</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Вкажіть бажану сферу роботи. Не додавайте паспортні дані, відомості про здоров’я чи документи.</small>
+<div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<label class="consent"><input name="consent" type="checkbox" value="yes" required> Погоджуюся на обробку зазначених даних Іваном Зданекіним для підбору роботи та зв’язку зі мною протягом строку до 6 місяців відповідно до <a href="/mypage/privacy/">політики конфіденційності (російською та польською)</a>.</label>
+<div id="anti-spam"></div><button class="button" type="submit" disabled>Надіслати заявку</button>
+<noscript><p>Щоб надіслати заявку, увімкніть JavaScript у браузері.</p></noscript>
+</form>
+</dialog>
 </main></body></html>
