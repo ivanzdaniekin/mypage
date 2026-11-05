@@ -71,7 +71,7 @@ const assert=require('node:assert/strict');
    await links.first().click();
    assert.equal(await name.inputValue(),'Draft',label);
    assert.equal(await consent.isChecked(),true,label);
-   for(const [field,value] of Object.entries({contact:'@draft_user',city:'Draft City',job:'Draft job'})){
+   for(const [field,value] of Object.entries({phoneNumber:'123456789',city:'Draft City',job:'Draft job'})){
     await form.locator(`[name="${field}"]`).fill(value);
    }
    await consent.uncheck();
@@ -119,10 +119,11 @@ const assert=require('node:assert/strict');
  // Intercept all nonlocal traffic. These receipts never reach a server.
  const {validate}=await import('../backend/worker.mjs');
  const version='mypage-privacy-2026-11-04-v1';
- const successModes=['saved','double-click','multiline'];
+ const successModes=['saved','double-click','multiline','contact-ru','contact-uk','contact-other'];
  const cases=[...successModes,'negative','wrong-id','rate','timeout','bad-json','captcha','duplicate','validation','upstream','empty-token','expired'];
  for(const mode of cases){
-  const uk=mode==='validation'||mode==='multiline';
+  const uk=['validation','multiline','contact-uk'].includes(mode);
+  const contactCase=mode.startsWith('contact-');
   const page=await browser.newPage({viewport:{width:390,height:600}});
   let body,posts=0;
   const allowOrigin={'Access-Control-Allow-Origin':origin};
@@ -156,6 +157,10 @@ const assert=require('node:assert/strict');
     posts++;
     body=JSON.parse(request.postData());
     if(mode==='timeout')return route.abort();
+    if(contactCase){
+     const expected={'contact-ru':'+48123456789','contact-uk':'+380501234567','contact-other':'+12025550100'};
+     assert.equal(validate(body,version).contact,expected[mode]);
+    }
     if(mode==='multiline')assert.equal(validate(body,version).job,'First line Second line');
     const status={rate:429,captcha:403,duplicate:409,validation:400,upstream:502}[mode]??200;
     return route.fulfill({status,headers:allowOrigin,contentType:'application/json',
@@ -178,9 +183,32 @@ const assert=require('node:assert/strict');
   const status=page.locator('#application-status');
   const submit=form.locator('button[type=submit]');
   const job=['multiline','validation'].includes(mode)?'First line\nSecond line':'Test job';
-  for(const [name,value] of Object.entries({name:'Test Candidate',contact:'@test_candidate',city:'Test City',job}))
+  for(const [name,value] of Object.entries({name:'Test Candidate',phoneNumber:'123456789',city:'Test City',job}))
    await form.locator(`[name="${name}"]`).fill(value);
   await form.locator('[name="consent"]').check();
+  if(contactCase){
+   const contact=form.locator('[name="phoneNumber"]');
+   await contact.fill('123456');
+   await submit.click();
+   assert.match(await status.textContent(),uk?/Перевірте код країни/:/Проверьте код страны/);
+   assert.equal(posts,0);
+   assert.equal(await page.evaluate(()=>window.resets),0);
+   assert.equal(await contact.inputValue(),'123456');
+   const country=form.locator('[name="countryCode"]');
+   assert.equal(await country.inputValue(),'48');
+   if(mode==='contact-other'){
+    await country.selectOption('other');
+    const other=form.locator('[name="otherCode"]');
+    assert.equal(await other.isVisible(),true);
+    await other.fill('+1');
+    await contact.fill('202 555 0100');
+   }else if(uk){
+    await country.selectOption('380');
+    await contact.fill('501234567');
+   }else{
+    await contact.fill('123 456 789');
+   }
+  }
   if(mode==='expired')await page.evaluate(()=>window.expire());
   if(['empty-token','expired'].includes(mode)){
    assert.equal(await submit.isDisabled(),true);

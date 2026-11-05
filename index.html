@@ -73,7 +73,25 @@
 <p id="application-status" role="status" aria-live="polite">Загружается форма заявки.</p>
 <form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
 <label for="candidate-name">Имя</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
-<label for="candidate-contact">Телефон с кодом страны или Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Например, @username или номер с + и кодом страны.</small>
+<label for="candidate-contact">Номер телефона</label>
+<div class="candidate-phone">
+<select id="candidate-country-code" name="countryCode" aria-label="Код страны">
+<option value="48">+48 Польша</option>
+<option value="380">+380 Украина</option>
+<option value="375">+375 Беларусь</option>
+<option value="373">+373 Молдова</option>
+<option value="995">+995 Грузия</option>
+<option value="7">+7 Казахстан / Россия</option>
+<option value="49">+49 Германия</option>
+<option value="420">+420 Чехия</option>
+<option value="421">+421 Словакия</option>
+<option value="370">+370 Литва</option>
+<option value="other">Другой код страны</option>
+</select>
+<input id="candidate-contact" name="phoneNumber" type="tel" autocomplete="tel-national" required maxlength="30" aria-describedby="contact-help">
+<input id="candidate-other-code" name="otherCode" type="tel" autocomplete="tel-country-code" aria-label="Другой код страны" placeholder="+…" maxlength="4" required hidden disabled>
+</div>
+<small id="contact-help">Выберите код страны своего номера и введите остальные цифры. Например: +48 и 123 456 789.</small>
 <label for="candidate-city">Город</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
 <label for="candidate-job">Интересующая работа</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Укажите направление работы. Не добавляйте паспортные данные, сведения о здоровье или документы.</small>
 <div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
