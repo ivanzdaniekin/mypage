@@ -30,7 +30,7 @@
 ### 6. Сроки и удаление
 Заявки и согласия хранятся не более 6 месяцев с получения заявки, если согласие не отозвано раньше. Этот срок относится к Google Sheets, журналу с кодированной копией заявки, уведомлениям Telegram и управляемым администратором выгрузкам и резервным копиям. Кодирование base64 не является шифрованием.
 
-Запланированная очистка активных строк Google и кодированной копии в журнале начинается за сутки до истечения 6 календарных месяцев, чтобы исправное регулярное выполнение укладывалось в этот предел. При подтверждённом отзыве согласия или запросе на удаление обработка прекращается, и удаление ставится в очередь без ожидания этого срока, если нет другого действительного основания. Обезличивание полей не подменяется скрытием строки: поля очищаются, а старый requestId временно блокируется от восстановления.
+Активные строки Google и кодированная копия в журнале подлежат очистке по истечении 6 календарных месяцев. Очистка выполняется при ближайшем плановом запуске после истечения срока. При подтверждённом отзыве согласия или запросе на удаление обработка прекращается, и удаление ставится в очередь без ожидания этого срока, если нет другого действительного основания. Обезличивание полей не подменяется скрытием строки: поля очищаются, а старый requestId временно блокируется от восстановления.
 
 D1-квитанции хранятся до 7 дней плюс интервал ежедневной очистки, счётчики — до 20 минут плюс этот интервал. После удаления минимальные UUID-маркеры сверки могут сохраняться до 7 дней после завершения процесса на основании безопасности, без исходных полей заявки. Уведомления Telegram запланировано удалять значительно раньше 6 месяцев; неполученное подтверждение и ограничения API требуют ручной проверки владельцем.
 
@@ -79,7 +79,7 @@ Dostęp użytkownika do Arkuszy Google i zamkniętej grupy Telegram ma wyłączn
 ### 6. Przechowywanie i usuwanie
 Zgłoszenia i zgody są przechowywane nie dłużej niż 6 miesięcy od otrzymania zgłoszenia, o ile zgoda nie zostanie wcześniej wycofana. Termin obejmuje Arkusze Google, dziennik z kodowaną kopią zgłoszenia, powiadomienia Telegram oraz eksporty i kopie zapasowe zarządzane przez administratora. Base64 nie jest szyfrowaniem.
 
-Planowane usuwanie aktywnych wierszy Google i kodowanej kopii dziennika rozpoczyna się dobę przed upływem 6 miesięcy kalendarzowych, aby prawidłowe regularne wykonanie mieściło się w tym terminie. Po potwierdzonym wycofaniu zgody lub żądaniu usunięcia przetwarzanie ustaje, a usunięcie jest zlecane bez czekania na ten termin, chyba że istnieje inna ważna podstawa. Pola są czyszczone, a stary requestId tymczasowo blokowany przed odtworzeniem; ukrycie wiersza nie jest usunięciem.
+Aktywne wiersze Google i kodowana kopia dziennika podlegają usunięciu po upływie 6 miesięcy kalendarzowych. Usuwanie odbywa się przy najbliższym planowym uruchomieniu po upływie tego terminu. Po potwierdzonym wycofaniu zgody lub żądaniu usunięcia przetwarzanie ustaje, a usunięcie jest zlecane bez czekania na ten termin, chyba że istnieje inna ważna podstawa. Pola są czyszczone, a stary requestId tymczasowo blokowany przed odtworzeniem; ukrycie wiersza nie jest usunięciem.
 
 Potwierdzenia D1: do 7 dni plus odstęp codziennego czyszczenia; liczniki: do 20 minut plus ten odstęp. Po usunięciu minimalne znaczniki UUID mogą pozostać do 7 dni od zakończenia procesu ze względów bezpieczeństwa, bez pierwotnych pól zgłoszenia. Powiadomienia Telegram mają być usuwane znacznie wcześniej niż po 6 miesiącach; brak potwierdzenia i ograniczenia API wymagają ręcznej weryfikacji właściciela.
 

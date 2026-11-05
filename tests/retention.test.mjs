@@ -22,6 +22,30 @@ test('disabled scheduled maintenance makes zero DB/network changes',async()=>{as
 test('expiry erases active lead and payload, preserves fixed row indexes and blocks resurrection',()=>{
  const h=setup();assert.deepEqual(Array.from(h.ctx.privacyMaintenance_()),[id]);assert.ok(h.data['Лист1'][1].every(x=>x===''));assert.equal(h.data.MypageJournalV2[1][8],'ERASED');assert.equal(h.data.MypageJournalV2[1][5],'');h.props.MYPAGE_ENABLED='true';assert.equal(h.post(lead).code,'ERASED');assert.ok(h.data['Лист1'][1].every(x=>x===''));assert.equal(h.notifications(),0);
 });
+test('legacy early expiry cannot erase an application before six calendar months',()=>{
+ const h=setup(false);
+ const received=new Date();
+ received.setUTCDate(1);
+ received.setUTCMonth(received.getUTCMonth()-6);
+ received.setUTCDate(5);
+ received.setUTCHours(23,59,59,999);
+ const r=h.data.MypageJournalV2[1];
+ r[3]=received.toISOString();
+ h.data['Лист1'][1][0]=r[3];
+ const e=h.ctx.privacyRecord_(r);
+ // Model an older ledger whose stored expiry is already due.
+ e.row[2]=Date.now()-1000;
+ h.ctx.privacyWrite_(e);
+ // Shift the VM clock to the last millisecond before calendar expiry.
+ let clock=h.ctx.sixMonths_(r[3])-1;
+ const NativeDate=Date;
+ h.ctx.Date=class extends NativeDate {static now(){return clock;}};
+ const before=JSON.stringify(h.data['Лист1']);
+ assert.equal(h.ctx.privacyMaintenance_().length,0);
+ assert.equal(JSON.stringify(h.data['Лист1']),before);
+ clock++;
+ assert.deepEqual(Array.from(h.ctx.privacyMaintenance_()),[id]);
+});
 test('verified-owner withdrawal is scoped and legal hold prevents deletion',()=>{
  const h=setup(false);assert.equal(h.ctx.privacyMaintenance_().length,0);h.ctx.queuePrivacyRequest(id,'withdrawal');h.props.MYPAGE_LEGAL_HOLD_IDS=JSON.stringify([id]);const before=JSON.stringify(h.data['Лист1']);assert.equal(h.ctx.privacyMaintenance_().length,0);assert.equal(JSON.stringify(h.data['Лист1']),before);h.props.MYPAGE_LEGAL_HOLD_IDS='[]';assert.equal(h.ctx.privacyMaintenance_().length,1);
 });

@@ -237,8 +237,8 @@ function privacyRecord_(r,reason) {
   for(var i=1;i<rows.length;i++)if(rows[i][0]===r[0])matches.push(i);
   if(matches.length>1)throw Error('PRIVACY_CONFLICT');
   if(matches.length)return {sheet:sheet,index:matches[0]+1,row:rows[matches[0]]};
-  // Start one day early so a healthy daily job deletes no later than six calendar months.
-  var v=[r[0],reason||'expiry',sixMonths_(r[3])-86400000,'ACTIVE',Date.now(),'','','none','pending',''];
+  // Use the same calendar boundary for each new expiry record.
+  var v=[r[0],reason||'expiry',sixMonths_(r[3]),'ACTIVE',Date.now(),'','','none','pending',''];
   sheet.appendRow(v);SpreadsheetApp.flush();return {sheet:sheet,index:sheet.getLastRow(),row:v};
 }
 function privacyWrite_(record) {record.row[4]=Date.now();record.sheet.getRange(record.index,1,1,10).setValues([record.row]);SpreadsheetApp.flush();}
@@ -287,12 +287,16 @@ function privacyMaintenance_() {
       if(known[r[0]]&&known[r[0]][3]==='COMPLETE'&&now-Number(known[r[0]][4])<7*86400000)continue;
       if(holds.indexOf(r[0])!==-1)continue;
       if(r[8]==='ERASED'&&known[r[0]][8]==='deleted'&&String(known[r[0]][9]).indexOf('TELEGRAM_MANUAL')===0)continue;
-      var due=known[r[0]]?Number(known[r[0]][2]):sixMonths_(r[3])-86400000;
+      var previous=known[r[0]];
+      // Recompute regular expiry for records created by older releases.
+      var early=previous&&['withdrawal','erasure'].includes(previous[1]);
+      var due=(r[8]==='ERASED'||early)?Number(previous[2]):sixMonths_(r[3]);
+      if(!Number.isFinite(due))throw Error('INVALID_DATE');
       if(now<due&&!(known[r[0]]&&known[r[0]][7]==='sent'&&now-Number(known[r[0]][6])>=24*3600000))continue;
       touched++;
       var e=privacyRecord_(r);
       if(e.row[7]==='sent'&&now-Number(e.row[6])>=24*3600000){deleteTelegramCopy_(e);privacyWrite_(e);}
-      if(now<Number(e.row[2]))continue;
+      if(now<due)continue;
       if(r[8]!=='ERASED') {
         if(rows.slice(1).filter(function(x){return x[0]===r[0];}).length!==1)throw Error('ID_CONFLICT');
         var target=Number(r[4]);if(!Number.isInteger(target)||target<2||target>s.leads.getMaxRows())throw Error('ROW_CONFLICT');
