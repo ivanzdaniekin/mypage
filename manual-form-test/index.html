@@ -5,7 +5,7 @@
 <label>Телефон или Telegram<input id="contact" readonly value="@synthetic_candidate" autocomplete="off"></label>
 <label>Город<input id="city" readonly value="Synthetic City" autocomplete="off"></label>
 <label>Интересующая работа<input id="job" readonly value="Synthetic job" autocomplete="off"></label>
-<label><input id="consent" type="checkbox"> Подтверждаю согласие на обработку этой синтетической тестовой заявки. Версия: test-2026-11-04.</label>
+<label><input id="consent" type="checkbox"> Подтверждаю согласие на обработку этой синтетической тестовой заявки. Версия: mypage-privacy-2026-11-04-v1.</label>
 <p>requestId: <span id="request-id"></span></p><p id="result" role="status" aria-live="polite">Проверка ещё не запускалась.</p>
 <button type="button" id="start" disabled>Начать Turnstile вручную</button><div id="widget"></div>
 <button type="button" id="export" disabled>Сохранить одну тестовую заявку в файл</button>
@@ -28,7 +28,7 @@
  },{once:true});
  save.addEventListener('click',()=>{
   if(exported||!token||!consent.checked)return;
-  const payload={requestId,name:document.querySelector('#name').value.trim(),contact:document.querySelector('#contact').value.trim(),city:document.querySelector('#city').value.trim(),job:document.querySelector('#job').value.trim(),consent:true,privacyVersion:'test-2026-11-04',website:'',turnstileToken:token,tokenReceivedAt:receivedAt};
+  const payload={requestId,name:document.querySelector('#name').value.trim(),contact:document.querySelector('#contact').value.trim(),city:document.querySelector('#city').value.trim(),job:document.querySelector('#job').value.trim(),consent:true,privacyVersion:'mypage-privacy-2026-11-04-v1',website:'',turnstileToken:token,tokenReceivedAt:receivedAt};
   exported=true;state();
   const url=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download='mypage-manual-'+requestId+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
