@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/mypage/assets/style.css">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "@id": "https://ivanzdaniekin.github.io/mypage/#person", "name": "Ivan Zdaniekin", "alternateName": "Іван Зданекін", "url": "https://ivanzdaniekin.github.io/mypage/", "image": "https://ivanzdaniekin.github.io/mypage/assets/portrait.jpg", "jobTitle": "Рекрутер", "sameAs": ["https://t.me/LevelUpComunity", "https://www.instagram.com/ivan.vakansii.pl/", "https://www.facebook.com/profile.php?id=61594301236873", "https://www.tiktok.com/@LevelUp0894", "https://www.linkedin.com/in/ivan-zdaniekin-ab8a70297"]}</script>
 <script type="module" src="/mypage/assets/leads.js"></script>
-</head><body><a class="skip" href="#content">До вмісту</a><main class="wrap" id="content">
+</head><body><a class="skip" href="#content">До вмісту</a><main class="wrap compact-page" id="content">
 <header class="hero">
 <nav class="language-switch" aria-label="Мова сторінки"><a href="/mypage/" lang="ru" hreflang="ru">Русский</a><a href="/mypage/uk/" lang="uk" hreflang="uk" aria-current="page">Українська</a></nav>
 <div class="ava"><div class="portrait"><img src="/mypage/assets/portrait.jpg" width="601" height="900" fetchpriority="high" alt="Іван Зданекін, рекрутер у Польщі"></div><div class="burst" aria-hidden="true">✦</div></div>
@@ -25,7 +25,7 @@
 <h1 class="name">Допоможу підібрати роботу по всій Польщі</h1>
 <p class="tagline">Індивідуальний підбір роботи в різних професійних сферах. Враховую ваш досвід, місце проживання, зручний графік та потребу в житлі.</p>
 <div class="ctas">
-  <a class="button" href="#application">Знайти роботу</a>
+  <a class="button" href="#application" aria-haspopup="dialog">Знайти роботу</a>
   <a class="button secondary" href="#contacts">Переглянути вакансії</a>
   <a class="button secondary" href="https://t.me/i_One_Zd">Підбір персоналу для роботодавців</a>
 </div>
@@ -34,51 +34,25 @@
 <h2>Про мене</h2>
 <p>Я Іван Зданекін, рекрутер. Допомагаю людям, які вже живуть у Польщі або планують переїзд, шукати роботу з урахуванням їхнього досвіду та побажань.</p>
 </section>
-<section class="section" id="vacancies">
-<h2>Актуальні вакансії</h2>
-<p>Розкажіть, яку роботу шукаєте й коли можете почати. Якщо є відповідні пропозиції, обговоримо обов’язки, умови та наступні кроки.</p>
-<div class="ctas"><a class="button" href="/mypage/uk/vakansii/">Дізнатися про вакансії</a></div>
-</section>
 <section class="section" id="cities">
-<h2>Робота по всій Польщі</h2>
-<p>Вкажіть бажане місто або регіон. Якщо розглядаєте переїзд, зазначте, коли зможете приїхати та чи потрібне житло. Так простіше зрозуміти, які пропозиції вам підходять.</p>
-<div class="ctas"><a class="button" href="#application">Підібрати роботу</a></div>
-</section>
-<section class="section" id="consultation">
-<h2>Як отримати консультацію</h2>
-<ol>
-  <li>Заповніть форму та вкажіть, як із вами зв’язатися.</li>
-  <li>Опишіть свій досвід, бажану сферу, рівень польської мови й зручний графік.</li>
-  <li>Якщо є відповідний варіант, уточніть обов’язки, ставку, договір і дорогу до роботи.</li>
-</ol>
-<h3>Робота в Польщі з житлом</h3>
-<p>Якщо потрібне проживання, зазначте це в заявці. Наявність житла залежить від конкретної пропозиції. Перед відгуком уточніть вартість, умови заселення й транспорт до роботи.</p>
-<div class="ctas"><a class="button" href="#application">Подати заявку</a></div>
+<span id="vacancies"></span><span id="consultation"></span>
+<h2>Підберу роботу під ваші умови</h2>
+<p>Допомагаю знайти відповідні пропозиції по всій Польщі з урахуванням вашого досвіду, професії, міста й графіка. За потреби врахую, чи потрібне вам житло та чи готові ви до переїзду.</p>
+<ul><li>Різні сфери діяльності</li><li>Підбір по всій Польщі</li><li>Індивідуальне обговорення умов</li></ul>
+<div class="ctas"><a class="button" href="#application" aria-haspopup="dialog">Підібрати роботу</a></div>
+<p class="card-link"><a href="/mypage/uk/vakansii/">Дізнатися про вакансії</a></p>
 </section>
 <section class="section" id="employers">
 <h2>Для роботодавців</h2>
 <p>Якщо шукаєте працівників у Польщі, напишіть мені в Telegram. Вкажіть місце роботи, обов’язки, графік і скільки працівників потрібно.</p>
 <div class="ctas"><a class="button secondary" href="https://t.me/i_One_Zd">Обговорити підбір у Telegram</a></div>
 </section>
-<section class="section" id="application" aria-labelledby="application-title">
-<h2 id="application-title">Заявка на підбір роботи</h2>
-<p id="application-status" role="status" aria-live="polite">Завантажується форма заявки.</p>
-<form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
-<label for="candidate-name">Ім’я</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
-<label for="candidate-contact">Телефон із кодом країни або Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Наприклад, @username або номер із + і кодом країни.</small>
-<label for="candidate-city">Місто</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
-<label for="candidate-job">Яку роботу ви шукаєте</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Вкажіть бажану сферу роботи. Не додавайте паспортні дані, відомості про здоров’я чи документи.</small>
-<div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
-<label class="consent"><input name="consent" type="checkbox" value="yes" required> Погоджуюся на обробку зазначених даних Іваном Зданекіним для підбору роботи та зв’язку зі мною протягом строку до 6 місяців відповідно до <a href="/mypage/privacy/">політики конфіденційності (російською та польською)</a>.</label>
-<div id="anti-spam"></div><button class="button" type="submit" disabled>Надіслати заявку</button>
-<noscript><p>Щоб надіслати заявку, увімкніть JavaScript у браузері.</p></noscript>
-</form></section>
 <section class="section" id="privacy" aria-labelledby="privacy-title">
 <h2 id="privacy-title">Конфіденційність заявок</h2>
 <p>Вказані у формі дані використовуються за вашою згодою для підбору роботи та зв’язку з вами. Згоду можна відкликати, написавши на <a href="mailto:ivanz.astarta@gmail.com">ivanz.astarta@gmail.com</a>.</p>
 <p><a href="/mypage/privacy/">Чинна політика конфіденційності російською та польською мовами</a>.</p>
 </section>
-<section class="section" id="contacts"><h2>Контакти й соціальні мережі</h2><p>Шукаєте роботу? Можете <a href="#application">подати заявку на сайті</a>. Публікації Level Up Community та інші мої профілі:</p>  <nav class="links" aria-label="Соціальні мережі Ivan Zdaniekin">
+<section class="section" id="contacts"><h2>Контакти й соціальні мережі</h2><p>Шукаєте роботу? Можете <a href="#application" aria-haspopup="dialog">подати заявку на сайті</a>. Публікації Level Up Community та інші мої профілі:</p>  <nav class="links" aria-label="Соціальні мережі Ivan Zdaniekin">
     <a href="https://t.me/LevelUpComunity" class="lnk">
       <span class="ico" style="background:var(--pink)" aria-hidden="true">💬</span>
       <span><b>Telegram</b><small>@LevelUpComunity</small></span>
@@ -106,4 +80,19 @@
     </a>
   </nav></section>
 <footer class="fine"><a href="/mypage/uk/">Ivan Zdaniekin</a> · Робота та підбір кандидатів у Польщі</footer>
+<dialog class="application-dialog" id="application" aria-labelledby="application-title">
+<button class="application-close" type="button" aria-label="Закрити форму" autofocus>×</button>
+<h2 id="application-title">Заявка на підбір роботи</h2>
+<p id="application-status" role="status" aria-live="polite">Завантажується форма заявки.</p>
+<form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
+<label for="candidate-name">Ім’я</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
+<label for="candidate-contact">Телефон із кодом країни або Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Наприклад, @username або номер із + і кодом країни.</small>
+<label for="candidate-city">Місто</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
+<label for="candidate-job">Яку роботу ви шукаєте</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Вкажіть бажану сферу роботи. Не додавайте паспортні дані, відомості про здоров’я чи документи.</small>
+<div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<label class="consent"><input name="consent" type="checkbox" value="yes" required> Погоджуюся на обробку зазначених даних Іваном Зданекіним для підбору роботи та зв’язку зі мною протягом строку до 6 місяців відповідно до <a href="/mypage/privacy/">політики конфіденційності (російською та польською)</a>.</label>
+<div id="anti-spam"></div><button class="button" type="submit" disabled>Надіслати заявку</button>
+<noscript><p>Щоб надіслати заявку, увімкніть JavaScript у браузері.</p></noscript>
+</form>
+</dialog>
 </main></body></html>

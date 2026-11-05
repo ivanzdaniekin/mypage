@@ -1,4 +1,7 @@
 import { config } from './leads-config.js';
+const dialog = document.querySelector('#application');
+const closeButton = dialog.querySelector('.application-close');
+const applicationHash = '#application';
 const form = document.querySelector('#candidate-form');
 const status = document.querySelector('#application-status');
 const button = form.querySelector('button[type="submit"]');
@@ -37,22 +40,76 @@ const locked = () => busy || finished || uncertain;
 const ready = config.enabled && config.privacyApproved && config.privacyVersion &&
   form.dataset.privacyVersion === config.privacyVersion &&
   /^https:\/\//.test(config.endpoint) && config.turnstileSiteKey;
-if (ready) {
-  status.textContent = copy.instructions;
-  const script = document.createElement('script');
-  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-  script.onload = () => {
+let widgetLoading = false;
+let opener;
+if (ready) status.textContent = copy.instructions;
+
+function prepareTurnstile() {
+  if (!ready || widget !== undefined || widgetLoading || !dialog.open) return;
+  if (window.turnstile) {
     widget = window.turnstile.render('#anti-spam', {
-      sitekey: config.turnstileSiteKey, action: 'candidate',
+      sitekey: config.turnstileSiteKey, action: 'candidate', size: 'compact',
       ...(ukrainian ? {language:'uk'} : {}),
       callback: () => { button.disabled = locked(); },
       'expired-callback': () => { button.disabled = true; },
       'error-callback': () => { button.disabled = true; status.textContent = copy.widgetError; }
     });
+    return;
+  }
+  widgetLoading = true;
+  status.textContent = copy.instructions;
+  const script = document.createElement('script');
+  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  script.onload = () => {
+    widgetLoading = false;
+    if (window.turnstile) prepareTurnstile();
+    else status.textContent = copy.widgetLoadError;
   };
-  script.onerror = () => { status.textContent = copy.widgetLoadError; };
+  script.onerror = () => {
+    widgetLoading = false;
+    script.remove();
+    status.textContent = copy.widgetLoadError;
+  };
   document.head.append(script);
 }
+
+function syncDialog() {
+  if (location.hash === applicationHash) {
+    if (!dialog.open) dialog.showModal();
+    prepareTurnstile();
+  } else if (dialog.open) {
+    dialog.close();
+  }
+}
+
+document.querySelectorAll('a[href="#application"]').forEach(link => {
+  link.addEventListener('click', event => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey ||
+        event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    opener = link;
+    if (location.hash !== applicationHash) {
+      const url = new URL(location.href);
+      url.hash = applicationHash;
+      history.pushState({applicationFrom: location.hash}, '', url);
+    }
+    syncDialog();
+  });
+});
+closeButton.addEventListener('click', () => dialog.close());
+dialog.addEventListener('close', () => {
+  if (dialog.open) return;
+  if (location.hash === applicationHash) {
+    const url = new URL(location.href);
+    url.hash = history.state?.applicationFrom ?? '';
+    history.replaceState(null, '', url);
+    (opener ?? document.querySelector('a[href="#application"]'))?.focus({preventScroll: true});
+  }
+  opener = undefined;
+});
+window.addEventListener('hashchange', syncDialog);
+syncDialog();
+
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (!ready || locked() || !form.reportValidity() || !window.turnstile) return;

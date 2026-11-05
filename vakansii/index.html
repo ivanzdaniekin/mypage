@@ -15,32 +15,39 @@
 <link href="/mypage/assets/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="/mypage/assets/style.css">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "@id": "https://ivanzdaniekin.github.io/mypage/#person", "name": "Ivan Zdaniekin", "alternateName": "Иван Зданекин", "url": "https://ivanzdaniekin.github.io/mypage/", "image": "https://ivanzdaniekin.github.io/mypage/assets/portrait.jpg", "jobTitle": "Рекрутер", "sameAs": ["https://t.me/LevelUpComunity", "https://www.instagram.com/ivan.vakansii.pl/", "https://www.facebook.com/profile.php?id=61594301236873", "https://www.tiktok.com/@LevelUp0894", "https://www.linkedin.com/in/ivan-zdaniekin-ab8a70297"]}</script>
-</head><body><a class="skip" href="#content">К содержимому</a><main class="wrap" id="content">
+<script type="module" src="/mypage/assets/leads.js"></script>
+</head><body><a class="skip" href="#content">К содержимому</a><main class="wrap compact-page" id="content">
 <header class="section">
 <nav class="language-switch" aria-label="Язык страницы"><a href="/mypage/vakansii/" lang="ru" hreflang="ru" aria-current="page">Русский</a><a href="/mypage/uk/vakansii/" lang="uk" hreflang="uk">Українська</a></nav>
 <p><a href="/mypage/">Главная</a> / Вакансии</p>
 <h1 class="name">Вакансии в Польше: как узнать о доступной работе</h1>
 <p>Оставьте заявку, чтобы обсудить поиск работы в Польше. Я учту ваш опыт, интересующую сферу, регион и график. Если есть подходящее предложение, обсудим его условия.</p>
-<div class="ctas"><a class="button" href="/mypage/#application">Узнать о вакансиях</a></div>
+<div class="ctas"><a class="button" href="#application" aria-haspopup="dialog">Подобрать работу</a></div>
 </header>
 <section class="section">
-<h2>Как проходит подбор</h2>
-<ol>
-  <li>Заполните форму и оставьте телефон или контакт в Telegram.</li>
-  <li>Расскажите, где и кем хотите работать. Укажите, какие условия для вас обязательны, а какие можно обсудить.</li>
-  <li>Если есть подходящее предложение, уточните обязанности, требования и порядок отклика.</li>
+<h2>Как узнать о подходящей вакансии</h2>
+<ol class="vacancy-steps">
+  <li><strong>Оставьте заявку.</strong> Укажите телефон или Telegram, желаемую работу, город, опыт и уровень польского. Добавьте удобный график, дату выхода и необходимость жилья.</li>
+  <li><strong>Обсудите предложение.</strong> Если найдётся подходящий вариант, уточните обязанности, требования и порядок отклика.</li>
+  <li><strong>Проверьте условия.</strong> Спросите точный адрес и вид договора, ставку brutto или netto, период оплаты и возможные удержания. Если предлагают жильё, уточните стоимость, условия заселения и дорогу до работы.</li>
 </ol>
-<h2>Что указать в заявке</h2>
-<ul>
-  <li>Предпочтительный город или регион и готовность к переезду.</li>
-  <li>Опыт работы, навыки и уровень польского языка.</li>
-  <li>Удобный график и возможная дата выхода.</li>
-  <li>Нужно ли жильё и транспорт до работы.</li>
-</ul>
-<p>Пример описания предпочтений: «Ищу работу в сфере обслуживания. Рассматриваю разные города, если можно добираться до работы общественным транспортом. Предпочитаю дневные смены».</p>
-<h2>Что проверить перед откликом</h2>
-<p>Попросите описание обязанностей, точный адрес работы, вид договора и ставку. Уточните, указана ли оплата brutto или netto, за какой период её начисляют и какие возможны удержания. Если предлагают жильё, проверьте стоимость и условия заселения.</p>
+<p>Пример для заявки: «Ищу работу в сфере обслуживания, могу выйти через неделю. Предпочитаю дневные смены, готов(а) к переезду, если есть жильё и транспорт до работы».</p>
 <p><a href="/mypage/#cities">Работа по всей Польше</a> · <a href="/mypage/rabotodatelyam/">Информация работодателям</a></p>
 </section>
 <footer class="fine"><a href="/mypage/">Ivan Zdaniekin</a> · Работа и подбор кандидатов в Польше</footer>
+<dialog class="application-dialog" id="application" aria-labelledby="application-title">
+<button class="application-close" type="button" aria-label="Закрыть форму" autofocus>×</button>
+<h2 id="application-title">Заявка на подбор работы</h2>
+<p id="application-status" role="status" aria-live="polite">Загружается форма заявки.</p>
+<form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
+<label for="candidate-name">Имя</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
+<label for="candidate-contact">Телефон с кодом страны или Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Например, @username или номер с + и кодом страны.</small>
+<label for="candidate-city">Город</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
+<label for="candidate-job">Интересующая работа</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Укажите направление работы. Не добавляйте паспортные данные, сведения о здоровье или документы.</small>
+<div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<label class="consent"><input name="consent" type="checkbox" value="yes" required> Согласен(на) на обработку указанных данных Иваном Зданекиным для подбора работы и связи со мной на срок до 6 месяцев согласно <a href="/mypage/privacy/">политике конфиденциальности</a>.</label>
+<div id="anti-spam"></div><button class="button" type="submit" disabled>Отправить заявку</button>
+<noscript><p>Для отправки заявки включите JavaScript в браузере.</p></noscript>
+</form>
+</dialog>
 </main></body></html>

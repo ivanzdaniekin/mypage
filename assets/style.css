@@ -441,3 +441,51 @@ section { scroll-margin-top: 20px; }
   color: #fff;
   text-decoration: none;
 }
+
+.compact-page { padding-bottom: 32px; }
+.compact-page .section { padding-block: 16px; margin-block: 14px; }
+.compact-page .section h2 { margin-bottom: 8px; }
+.compact-page .section p,
+.compact-page .section ol,
+.compact-page .section ul { margin-block: 8px; }
+.compact-page .section ol,
+.compact-page .section ul { padding-inline-start: 24px; }
+.compact-page .section > .ctas { margin-block-start: 12px; }
+.compact-page .section > :last-child { margin-bottom: 0; }
+.card-link { text-align: center; }
+.vacancy-steps li + li { margin-top: 6px; }
+
+.application-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(calc(100% - 20px), 38rem);
+  max-height: calc(100vh - 20px);
+  max-height: calc(100dvh - 20px);
+  padding: clamp(14px, 4vw, 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: #fff;
+  background: #101010;
+  border: 1px solid #ff6558;
+  border-radius: 20px;
+}
+.application-dialog::backdrop { background: #000c; }
+html:has(.application-dialog[open]) { overflow: hidden; }
+.application-dialog h2 { padding-inline-end: 54px; overflow-wrap: anywhere; }
+.application-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #ff6558;
+  border-radius: 12px;
+  background: #171717;
+  color: #fff;
+  font: inherit;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.application-dialog :is(button, a):focus-visible { outline: 3px solid #ff9c91; outline-offset: 2px; }

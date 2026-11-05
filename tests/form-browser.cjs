@@ -5,20 +5,112 @@ const assert=require('node:assert/strict');
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  const url='http://127.0.0.1:8769/mypage/';
  let checked=0;
- for(const width of [320,375,390,768,1440]) {
-  const page=await browser.newPage({viewport:{width,height:900}});
-  let attempted=0;
+ for (const width of [320,390,768,1440]) {
+  const page=await browser.newPage({viewport:{width,height:width<768?600:900}});
+  let nonGet=0;
   await page.route('**/*',route=>{
-   if(route.request().url().startsWith('http://127.0.0.1:8769/'))return route.continue();
-   attempted++;return route.abort();
+   const request=route.request();
+   if(request.method()!=='GET'){nonGet++;return route.abort();}
+   if(request.url().startsWith(url))return route.continue();
+   if(request.url().startsWith('https://challenges.cloudflare.com/turnstile/'))return route.fulfill({
+    contentType:'text/javascript',
+    body:'window.turnstile={render(selector,{action, language, size}){window.widgetOptions={action, language, size};document.querySelector(selector).style.height="140px";return 1}};'
+   });
+   return route.abort();
   });
-  await page.goto(url);await page.waitForLoadState('networkidle');
-  assert.equal(await page.locator('#candidate-form button').isDisabled(),true);
-  assert.equal(await page.locator('html').evaluate(el=>el.scrollWidth>innerWidth),false);
-  assert.equal(attempted<=3,true); // fonts may be attempted; no Turnstile or API while disabled
-  assert.equal(await page.locator('script[src*="turnstile"]').count(),0);
-  if(width===390)await page.screenshot({path:'/private/tmp/mypage-form-mobile.png',fullPage:true});
-  checked++;await page.close();
+  for (const path of ['', 'vakansii/', 'uk/', 'uk/vakansii/']) {
+   const uk=path.startsWith('uk/');
+   const label=width+'px /'+path;
+   assert.equal((await page.goto(url+path)).status(),200,label);
+   await page.evaluate(()=>document.fonts.ready.then(()=>true));
+   const dialog=page.getByRole('dialog');
+   const close=page.locator('.application-close');
+   const links=page.locator('a[href="#application"]');
+   const form=page.locator('#candidate-form');
+   const name=form.locator('[name="name"]');
+   const consent=form.locator('[name="consent"]');
+   assert.equal(await dialog.count(),0,label);
+   assert.equal(await page.locator('script[src*="turnstile"]').count(),0,label);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,label);
+   assert.equal(await links.count(),path.endsWith('vakansii/')?1:3,label);
+   for(let i=0;i<await links.count();i++){
+    const link=links.nth(i);
+    if(i===0){await link.focus();await page.keyboard.press('Enter');}
+    else await link.click();
+    await dialog.waitFor({state:'visible'});
+    assert.equal(new URL(page.url()).hash,'#application',label);
+    assert.equal(await close.evaluate(e=>e===document.activeElement),true,label);
+    assert.equal(await dialog.evaluate(e=>{
+     const r=e.getBoundingClientRect();
+     return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&e.scrollWidth<=e.clientWidth;
+    }),true,label);
+    await page.waitForFunction(()=>window.widgetOptions);
+    assert.deepEqual(await page.evaluate(()=>window.widgetOptions),{
+     action:'candidate',language:uk?'uk':undefined,size:'compact'
+    },label);
+    assert.equal(await form.evaluate(e=>e.checkValidity()),false,label);
+    assert.equal(await form.locator('button[type=submit]').isDisabled(),true,label);
+    if(width===320){
+     assert.equal(await dialog.evaluate(e=>e.scrollHeight>e.clientHeight),true,label);
+     await dialog.evaluate(e=>{e.scrollTop=e.scrollHeight;});
+     assert.equal(await dialog.evaluate(e=>e.scrollTop>0),true,label);
+    }
+    await page.keyboard.press('Tab');
+    assert.equal(await name.evaluate(e=>e===document.activeElement),true,label);
+    await name.fill('Draft');
+    await consent.check();
+    if(i===0)await page.keyboard.press('Escape');else await close.click();
+    await dialog.waitFor({state:'hidden'});
+    await page.waitForFunction(()=>location.hash!=='#application');
+    assert.equal(await link.evaluate(e=>e===document.activeElement),true,label);
+   }
+   await links.first().click();
+   assert.equal(await name.inputValue(),'Draft',label);
+   assert.equal(await consent.isChecked(),true,label);
+   for(const [field,value] of Object.entries({contact:'@draft_user',city:'Draft City',job:'Draft job'})){
+    await form.locator(`[name="${field}"]`).fill(value);
+   }
+   await consent.uncheck();
+   assert.equal(await form.evaluate(e=>e.checkValidity()),false,label);
+   await consent.check();
+   assert.equal(await form.evaluate(e=>e.checkValidity()),true,label);
+   assert.equal(await form.locator('button[type=submit]').isDisabled(),true,label);
+   await page.goBack();
+   await dialog.waitFor({state:'hidden'});
+   await page.goForward();
+   await dialog.waitFor({state:'visible'});
+   assert.equal(await name.inputValue(),'Draft',label);
+   await page.goto(url+path+'?direct=1#application');
+   await dialog.waitFor({state:'visible'});
+   await close.click();
+   await page.waitForFunction(()=>location.hash==='');
+   assert.equal(new URL(page.url()).search,'?direct=1',label);
+   assert.equal(await links.first().evaluate(e=>e===document.activeElement),true,label);
+   if(!path.endsWith('vakansii/')){
+    await page.locator('.ctas a[href="#contacts"]').click();
+    assert.equal(new URL(page.url()).hash,'#contacts',label);
+    await page.locator('#contacts a[href="#application"]').click();
+    await dialog.waitFor({state:'visible'});
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>location.hash==='#contacts');
+    const vacanciesLink=page.locator('.card-link a');
+    await vacanciesLink.click();
+    assert.equal(new URL(page.url()).pathname,new URL(url+path+'vakansii/').pathname,label);
+    await page.goBack();
+   }
+   const other=page.locator('.language-switch a:not([aria-current])');
+   const alternate=await other.getAttribute('href');
+   await other.click();
+   assert.equal(new URL(page.url()).pathname,alternate,label);
+   checked++;
+  }
+  assert.equal(nonGet,0);
+  await page.close();
+ }
+ if(process.argv.includes('--modal-only')){
+  await browser.close();
+  console.log('PASS: '+checked+' modal page/width combinations; no POST requests.');
+  return;
  }
  // Clearly isolated fake transport to verify UI receipt logic; not a working integration.
  for(const mode of ['saved','negative','wrong-id','rate','timeout','bad-json','captcha','duplicate','empty-token','double-click']){
@@ -36,7 +128,7 @@ const assert=require('node:assert/strict');
    if(u.startsWith('http://127.0.0.1:8769/'))return route.continue();
    return route.abort();
   });
-  await page.goto(url);await page.waitForFunction(()=>!document.querySelector('#candidate-form button').disabled);
+  await page.goto(url);await page.locator('a[href="#application"]').first().click();await page.waitForFunction(()=>!document.querySelector('#candidate-form button').disabled);
   for(const [name,value] of Object.entries({name:'Test Candidate',contact:'@test_candidate',city:'Test City',job:'Test job'}))await page.locator(`[name="${name}"]`).fill(value);
   await page.locator('[name="consent"]').check();await page.locator('#candidate-form button').click();
   if(mode==='double-click')await page.locator('#candidate-form').evaluate(f=>f.requestSubmit());
@@ -52,5 +144,5 @@ const assert=require('node:assert/strict');
   if(['negative','wrong-id','timeout','bad-json'].includes(mode))assert.ok(message.includes(body.requestId));
   checked++;await page.close();
  }
- await browser.close();console.log('PASS: '+checked+' browser cases (5 widths disabled, 10 isolated receipt scenarios; no live Turnstile/API).');
+ await browser.close();console.log('PASS: '+checked+' browser cases (modal and isolated receipt scenarios; no live Turnstile/API).');
 })().catch(e=>{console.error(e);process.exit(1)});
