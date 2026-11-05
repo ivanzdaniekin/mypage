@@ -5,7 +5,11 @@ import path from 'node:path';
 export function checkLaunch(){
  const root=fileURLToPath(new URL('../',import.meta.url)),read=p=>fs.readFileSync(path.join(root,p),'utf8');
  const config=JSON.parse(read('config/launch.json')),v=config.privacyVersion;
- assert.equal(config.policyPublished,false);
+ assert.equal(config.policyPublished,true);
+ const policy=new URL(config.policyUrl);
+ assert.equal(policy.href,'https://ivanzdaniekin.github.io/mypage/privacy/');
+ assert.match(config.policyEffectiveDate,/^\d{4}-\d{2}-\d{2}$/);
+ assert.ok(read('index.html').includes('href="'+policy.pathname+'"'));
  assert.match(read('assets/leads-config.js'),/enabled:\s*false/);assert.match(read('assets/leads-config.js'),/privacyApproved:\s*false/);
  assert.match(read('assets/leads-config.js'),new RegExp('privacyVersion: '+JSON.stringify(v).replaceAll('"',"'")));
  assert.ok(read('index.html').includes('data-privacy-version="'+v+'"'));

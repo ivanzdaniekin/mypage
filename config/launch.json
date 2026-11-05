@@ -2,7 +2,7 @@
   "privacyVersion": "mypage-privacy-2026-11-04-v1",
   "preparedDate": "2026-11-04",
   "effectiveRule": "On actual publication, not before 2026-11-04",
-  "policyPublished": false,
+  "policyPublished": true,
   "appsScriptProperties": {
     "MYPAGE_PRIVACY_VERSION": "mypage-privacy-2026-11-04-v1",
     "MYPAGE_ENABLED": "false",
@@ -10,5 +10,7 @@
     "MYPAGE_ALLOW_PROBE": "false",
     "MYPAGE_RETENTION_ENABLED": "false",
     "MYPAGE_TELEGRAM_DELETE_ENABLED": "false"
-  }
+  },
+  "policyEffectiveDate": "2026-11-05",
+  "policyUrl": "https://ivanzdaniekin.github.io/mypage/privacy/"
 }
