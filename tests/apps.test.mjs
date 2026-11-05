@@ -25,7 +25,7 @@ test('wrong secret, invalid consent, disabled and oversize never write',()=>{
 test('formula prefixes remain text; failure Telegram queues/backoffs/retries without new row',()=>{
  const h=harness();assert.equal(h.post({...lead,name:'=1+1',job:'@SUM(1)'}).saved,true);
  assert.equal(h.data['Лист1'][1][1],'=1+1'); // literal API values; harness strips Sheets escape apostrophe
- h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';h.props.TELEGRAM_BOT_TOKEN='offline-only';h.props.MYPAGE_TELEGRAM_CHAT_ID='offline';h.telegramMode('rate');
+ h.props.MYPAGE_NOTIFICATIONS_ENABLED='true';h.props.MYPAGE_TELEGRAM_ACTIVATED_AT=new Date(Date.now()-60000).toISOString();h.props.TELEGRAM_BOT_TOKEN='offline-only';h.props.MYPAGE_TELEGRAM_CHAT_ID='offline';h.telegramMode('rate');
  h.ctx.retryTelegram();assert.equal(h.data.MypageJournalV2[1][9],'pending');assert.equal(h.data.MypageJournalV2[1][10],1);
  h.ctx.retryTelegram();assert.equal(h.notifications(),1);h.telegramOK();h.data.MypageJournalV2[1][11]=0;h.ctx.retryTelegram();assert.equal(h.data.MypageJournalV2[1][9],'sent');assert.equal(h.data['Лист1'].length,2);
 });
