@@ -408,3 +408,15 @@ a { color: #ff9c91; text-underline-offset: 4px; }
 .skip:focus { top: 12px; }
 section { scroll-margin-top: 20px; }
 @media(max-width: 380px) { .section { padding: 20px 14px; } .lnk { gap: 8px; padding: 12px 10px; } }
+
+#candidate-form { display: grid; gap: 10px; }
+#candidate-form > label { font-weight: 800; margin-top: 8px; }
+#candidate-form input:not([type=checkbox]), #candidate-form textarea { width: 100%; min-width: 0; box-sizing: border-box; color: #fff; background: #191919; border: 1px solid #888; border-radius: 10px; padding: 12px; font: inherit; }
+#candidate-form input:focus-visible, #candidate-form textarea:focus-visible { outline: 3px solid #ff6558; outline-offset: 3px; }
+#candidate-form .consent { font-weight: 500; line-height: 1.7; }
+#candidate-form input[type=checkbox] { width: 20px; height: 20px; vertical-align: middle; }
+#candidate-form button { font: inherit; cursor: pointer; }
+#candidate-form button:disabled { opacity: .65; cursor: not-allowed; }
+.form-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.section h2, .section h3 { overflow-wrap: anywhere; }
+#anti-spam { min-width: 0; }

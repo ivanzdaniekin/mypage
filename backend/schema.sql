@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS limits (bucket TEXT PRIMARY KEY, count INTEGER NOT NULL, expires INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS limits_expiry ON limits(expires);
+CREATE TABLE IF NOT EXISTS receipts (id TEXT PRIMARY KEY, digest TEXT NOT NULL, saved INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS receipts_updated ON receipts(updated);
+CREATE TABLE IF NOT EXISTS erasures (id TEXT PRIMARY KEY, expires INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS erasures_expiry ON erasures(expires);
