@@ -4,6 +4,8 @@ const closeButton = dialog.querySelector('.application-close');
 const applicationHash = '#application';
 const form = document.querySelector('#candidate-form');
 const status = document.querySelector('#application-status');
+const countryCode = form.querySelector('#candidate-country-code');
+const otherCode = form.querySelector('#candidate-other-code');
 const button = form.querySelector('button[type="submit"]');
 const ukrainian = document.documentElement.lang === 'uk';
 const copy = ukrainian ? {
@@ -15,6 +17,7 @@ const copy = ukrainian ? {
   saved: 'Заявку збережено. Повторно надсилати її не потрібно.',
   rate: 'Забагато запитів. Зачекайте 10 хвилин.',
   captcha: 'Перевірку захисту не прийнято. Пройдіть її ще раз перед надсиланням.',
+  invalidContact: 'Перевірте код країни й номер телефону. Для +48 введіть 9 цифр після коду.',
   validation: 'Перевірте ім’я, контакт, місто, опис роботи та згоду.',
   disabled: 'Приймання заявок тимчасово призупинено. Спробуйте пізніше.',
   duplicate: 'Схожа заявка вже існує. Повторно надсилати її не потрібно.',
@@ -29,6 +32,7 @@ const copy = ukrainian ? {
   saved: 'Заявка сохранена. Повторно отправлять её не нужно.',
   rate: 'Слишком много запросов. Подождите 10 минут.',
   captcha: 'Проверка защиты не принята. Пройдите её заново перед отправкой.',
+  invalidContact: 'Проверьте код страны и номер телефона. Для +48 введите 9 цифр после кода.',
   validation: 'Проверьте поля: имя, контакт, город, работу и согласие.',
   disabled: 'Приём заявок временно выключен. Попробуйте позже.',
   duplicate: 'Похожая заявка уже существует. Повторно отправлять её не нужно.',
@@ -135,16 +139,39 @@ dialog.addEventListener('close', () => {
 window.addEventListener('hashchange', syncDialog);
 syncDialog();
 
+function syncCountryCode() {
+  const custom = countryCode.value === 'other';
+  otherCode.hidden = !custom;
+  otherCode.disabled = !custom;
+}
+countryCode.addEventListener('change', syncCountryCode);
+syncCountryCode();
+
+function formatPhone(data) {
+  const code = data.countryCode === 'other' ? data.otherCode.trim().replace(/^\+/, '') : data.countryCode;
+  const number = data.phoneNumber.trim();
+  if (!/^[1-9]\d{0,2}$/.test(code) || !/^[\d ()-]+$/.test(number)) return null;
+  const digits = number.replace(/\D/g, '');
+  const phone = code + digits;
+  if (!digits || phone.length < 7 || phone.length > 15 || (code === '48' && digits.length !== 9)) return null;
+  return '+' + phone;
+}
+
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (locked() || !form.reportValidity()) return;
   if (!ready) { showSubmissionStatus(copy.disabled); return; }
+  const data = Object.fromEntries(new FormData(form));
+  const contact = formatPhone(data);
+  if (!contact) {
+    showSubmissionStatus(copy.invalidContact);
+    return;
+  }
   const token = turnstileToken;
   if (!token) { showSubmissionStatus(copy.missingToken); return; }
-  const data = Object.fromEntries(new FormData(form));
   // The Worker accepts single-line text. Keep the original draft in the textarea.
   const job = data.job.replace(/[\r\n\t]+/g, ' ').trim();
-  const fields = {name:data.name.trim(), contact:data.contact.trim(), city:data.city.trim(), job,
+  const fields = {name:data.name.trim(), contact, city:data.city.trim(), job,
     consent:data.consent === 'yes', privacyVersion:config.privacyVersion};
   const serialized = JSON.stringify(fields);
   // Preserve request ID on retry of identical content; never store personal data in browser storage.
@@ -172,6 +199,7 @@ form.addEventListener('submit', async event => {
     }
     finished = true;
     form.reset();
+    syncCountryCode();
     form.hidden = true;
     showSubmissionStatus(copy.saved);
   } catch (error) {

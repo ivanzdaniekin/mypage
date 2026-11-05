@@ -414,8 +414,8 @@ section { scroll-margin-top: 20px; }
 
 #candidate-form:not([hidden]) { display: grid; gap: 10px; }
 #candidate-form > label { font-weight: 800; margin-top: 8px; }
-#candidate-form input:not([type=checkbox]), #candidate-form textarea { width: 100%; min-width: 0; box-sizing: border-box; color: #fff; background: #191919; border: 1px solid #888; border-radius: 10px; padding: 12px; font: inherit; }
-#candidate-form input:focus-visible, #candidate-form textarea:focus-visible { outline: 3px solid #ff6558; outline-offset: 3px; }
+#candidate-form input:not([type=checkbox]), #candidate-form textarea, .candidate-phone select { width: 100%; min-width: 0; box-sizing: border-box; color: #fff; background: #191919; border: 1px solid #888; border-radius: 10px; padding: 12px; font: inherit; }
+#candidate-form input:focus-visible, #candidate-form textarea:focus-visible, .candidate-phone select:focus-visible { outline: 3px solid #ff6558; outline-offset: 3px; }
 #candidate-form .consent { font-weight: 500; line-height: 1.7; }
 #candidate-form input[type=checkbox] { width: 20px; height: 20px; vertical-align: middle; }
 #candidate-form button { font: inherit; cursor: pointer; }
@@ -489,3 +489,14 @@ html:has(.application-dialog[open]) { overflow: hidden; }
   cursor: pointer;
 }
 .application-dialog :is(button, a):focus-visible { outline: 3px solid #ff9c91; outline-offset: 2px; }
+
+.candidate-phone {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 8px;
+}
+
+#candidate-other-code {
+  grid-column: 1;
+  grid-row: 2;
+}

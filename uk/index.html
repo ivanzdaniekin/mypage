@@ -86,7 +86,25 @@
 <p id="application-status" role="status" aria-live="polite">Завантажується форма заявки.</p>
 <form data-privacy-version="mypage-privacy-2026-11-04-v1" id="candidate-form" method="post" action="#application">
 <label for="candidate-name">Ім’я</label><input id="candidate-name" name="name" autocomplete="given-name" required minlength="2" maxlength="80">
-<label for="candidate-contact">Телефон із кодом країни або Telegram</label><input id="candidate-contact" name="contact" autocomplete="off" required minlength="5" maxlength="80" aria-describedby="contact-help"><small id="contact-help">Наприклад, @username або номер із + і кодом країни.</small>
+<label for="candidate-contact">Номер телефону</label>
+<div class="candidate-phone">
+<select id="candidate-country-code" name="countryCode" aria-label="Код країни">
+<option value="48">+48 Польща</option>
+<option value="380">+380 Україна</option>
+<option value="375">+375 Білорусь</option>
+<option value="373">+373 Молдова</option>
+<option value="995">+995 Грузія</option>
+<option value="7">+7 Казахстан / Росія</option>
+<option value="49">+49 Німеччина</option>
+<option value="420">+420 Чехія</option>
+<option value="421">+421 Словаччина</option>
+<option value="370">+370 Литва</option>
+<option value="other">Інший код країни</option>
+</select>
+<input id="candidate-contact" name="phoneNumber" type="tel" autocomplete="tel-national" required maxlength="30" aria-describedby="contact-help">
+<input id="candidate-other-code" name="otherCode" type="tel" autocomplete="tel-country-code" aria-label="Інший код країни" placeholder="+…" maxlength="4" required hidden disabled>
+</div>
+<small id="contact-help">Оберіть код країни свого номера й введіть решту цифр. Наприклад: +48 і 123 456 789.</small>
 <label for="candidate-city">Місто</label><input id="candidate-city" name="city" autocomplete="address-level2" required minlength="2" maxlength="100">
 <label for="candidate-job">Яку роботу ви шукаєте</label><textarea id="candidate-job" name="job" required minlength="2" maxlength="500" rows="3" aria-describedby="job-help"></textarea><small id="job-help">Вкажіть бажану сферу роботи. Не додавайте паспортні дані, відомості про здоров’я чи документи.</small>
 <div class="form-trap" aria-hidden="true"><label>Ваш сайт<input name="website" tabindex="-1" autocomplete="off"></label></div>
