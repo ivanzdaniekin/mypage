@@ -1,9 +1,13 @@
 // Run with NODE_PATH pointing to a locally installed Playwright. No external requests.
-const {chromium}=require('playwright');
+const {chromium,webkit}=require('playwright');
 const assert=require('node:assert/strict');
 (async()=>{
- const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
- const url='http://127.0.0.1:8769/mypage/';
+ const useWebKit=process.argv.includes('--webkit');
+ const browser=useWebKit?await webkit.launch():await chromium.launch({
+  headless:true,executablePath:process.env.CHROME_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+ });
+ const url=process.env.MYPAGE_TEST_URL||'http://127.0.0.1:8769/mypage/';
+ const origin=new URL(url).origin;
  let checked=0;
  for (const width of [320,390,768,1440]) {
   const page=await browser.newPage({viewport:{width,height:width<768?600:900}});
@@ -112,37 +116,116 @@ const assert=require('node:assert/strict');
   console.log('PASS: '+checked+' modal page/width combinations; no POST requests.');
   return;
  }
- // Clearly isolated fake transport to verify UI receipt logic; not a working integration.
- for(const mode of ['saved','negative','wrong-id','rate','timeout','bad-json','captcha','duplicate','empty-token','double-click']){
-  const page=await browser.newPage();let body,posts=0;
+ // Intercept all nonlocal traffic. These receipts never reach a server.
+ const {validate}=await import('../backend/worker.mjs');
+ const version='mypage-privacy-2026-11-04-v1';
+ const successModes=['saved','double-click','multiline'];
+ const cases=[...successModes,'negative','wrong-id','rate','timeout','bad-json','captcha','duplicate','validation','upstream','empty-token','expired'];
+ for(const mode of cases){
+  const uk=mode==='validation'||mode==='multiline';
+  const page=await browser.newPage({viewport:{width:390,height:600}});
+  let body,posts=0;
+  const allowOrigin={'Access-Control-Allow-Origin':origin};
   await page.route('**/*',async route=>{
-   const u=route.request().url();
-   if(u.endsWith('/assets/leads-config.js'))return route.fulfill({contentType:'text/javascript',body:'export const config={enabled:true,privacyApproved:true,privacyVersion:"mypage-privacy-2026-11-04-v1",endpoint:"https://offline.invalid/applications",turnstileSiteKey:"offline"};'});
-   if(u.includes('challenges.cloudflare.com'))return route.fulfill({contentType:'text/javascript',body:`let c; window.turnstile={render:(el,opts)=>{c=opts.callback;queueMicrotask(c);return 1},getResponse:()=>${JSON.stringify(mode==='empty-token'?'':'offline')},reset:()=>queueMicrotask(c)};`});
+   const request=route.request(), u=request.url();
+   if(u.endsWith('/assets/leads-config.js'))return route.fulfill({
+    contentType:'text/javascript',
+    body:`export const config={enabled:true,privacyApproved:true,privacyVersion:"${version}",endpoint:"https://offline.invalid/applications",turnstileSiteKey:"offline"};`
+   });
+   if(u.includes('challenges.cloudflare.com'))return route.fulfill({
+    contentType:'text/javascript',
+    body:`window.resets=0; window.renders=0; let callbacks;
+    window.turnstile={
+     render(selector,options){
+      window.renders++; callbacks=options; window.expire=options['expired-callback'];
+      document.querySelector(selector).style.height='140px';
+      queueMicrotask(()=>options.callback(${JSON.stringify(mode==='empty-token'?'':'offline-token')}));
+      return 1;
+     },
+     reset(){
+      window.resets++;
+      callbacks['error-callback']();
+      queueMicrotask(()=>callbacks.callback('offline-fresh-token'));
+     }
+    };`
+   });
    if(u==='https://offline.invalid/applications'){
-    if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':'http://127.0.0.1:8769','Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type'}});
-    posts++;body=JSON.parse(route.request().postData());
+    if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:{
+     ...allowOrigin,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type'
+    }});
+    posts++;
+    body=JSON.parse(request.postData());
     if(mode==='timeout')return route.abort();
-    return route.fulfill({status:mode==='rate'?429:mode==='captcha'?403:mode==='duplicate'?409:200,headers:{'Access-Control-Allow-Origin':'http://127.0.0.1:8769'},contentType:'application/json',body:mode==='bad-json'?'<html>error</html>':JSON.stringify({saved:['saved','double-click','wrong-id'].includes(mode),requestId:mode==='wrong-id'?'wrong':body.requestId,code:mode==='duplicate'?'DUPLICATE':undefined})});
+    if(mode==='multiline')assert.equal(validate(body,version).job,'First line Second line');
+    const status={rate:429,captcha:403,duplicate:409,validation:400,upstream:502}[mode]??200;
+    return route.fulfill({status,headers:allowOrigin,contentType:'application/json',
+     body:mode==='bad-json'?'<html>error</html>':JSON.stringify({
+      saved:successModes.includes(mode)||mode==='wrong-id',
+      requestId:mode==='wrong-id'?'wrong':body.requestId,
+      code:mode==='duplicate'?'DUPLICATE':undefined
+     })
+    });
    }
-   if(u.startsWith('http://127.0.0.1:8769/'))return route.continue();
+   if(u.startsWith(url)&&request.method()==='GET')return route.continue();
    return route.abort();
   });
-  await page.goto(url);await page.locator('a[href="#application"]').first().click();await page.waitForFunction(()=>!document.querySelector('#candidate-form button').disabled);
-  for(const [name,value] of Object.entries({name:'Test Candidate',contact:'@test_candidate',city:'Test City',job:'Test job'}))await page.locator(`[name="${name}"]`).fill(value);
-  await page.locator('[name="consent"]').check();await page.locator('#candidate-form button').click();
-  if(mode==='double-click')await page.locator('#candidate-form').evaluate(f=>f.requestSubmit());
-  await page.waitForFunction(()=>!document.querySelector('#application-status').textContent.includes('Ожидаем'));
-  const message=await page.locator('#application-status').innerText();
-  assert.equal(message.startsWith('Заявка сохранена.'),['saved','double-click'].includes(mode));
-  assert.equal(posts,mode==='empty-token'?0:1);
-  if(body)assert.equal(body.consent,true);
-  if(['saved','double-click','negative','wrong-id','timeout','bad-json','duplicate'].includes(mode)){
-   assert.equal(await page.locator('#candidate-form button').isDisabled(),true);
-   await page.locator('#candidate-form').evaluate(f=>f.requestSubmit());assert.equal(posts,1);
+
+  await page.goto(url+(uk?'uk/':''));
+  const entry=page.locator('a[href="#application"]').first();
+  await entry.click();
+  await page.waitForFunction(()=>window.renders===1);
+  const form=page.locator('#candidate-form');
+  const status=page.locator('#application-status');
+  const submit=form.locator('button[type=submit]');
+  const job=['multiline','validation'].includes(mode)?'First line\nSecond line':'Test job';
+  for(const [name,value] of Object.entries({name:'Test Candidate',contact:'@test_candidate',city:'Test City',job}))
+   await form.locator(`[name="${name}"]`).fill(value);
+  await form.locator('[name="consent"]').check();
+  if(mode==='expired')await page.evaluate(()=>window.expire());
+  if(['empty-token','expired'].includes(mode)){
+   assert.equal(await submit.isDisabled(),true);
+   await form.evaluate(e=>e.requestSubmit());
+   assert.match(await status.textContent(),/Пройдите проверку/);
+   assert.equal(posts,0);
+   assert.equal(await page.evaluate(()=>window.resets),0);
+  }else{
+   await submit.click();
+   if(mode==='double-click')await form.evaluate(e=>e.requestSubmit());
+   await page.waitForFunction(()=>!document.querySelector('#application-status').textContent.match(/Ожидаем|Очікуємо/));
+   const message=await status.textContent();
+   const saved=successModes.includes(mode);
+   const terminal=saved||['negative','wrong-id','timeout','bad-json','duplicate','upstream'].includes(mode);
+   assert.equal(/^Заявк[ау] сохранена|^Заявку збережено/.test(message),saved,mode);
+   assert.equal(posts,1,mode);
+   assert.equal(body.consent,true,mode);
+   assert.equal(body.turnstileToken,'offline-token',mode);
+   assert.equal(await page.evaluate(()=>window.resets),terminal?0:1,mode);
+   if(mode==='validation')assert.match(message,/Перевірте ім’я/);
+   if(['negative','wrong-id','timeout','bad-json','upstream'].includes(mode))assert.ok(message.includes(body.requestId),mode);
+   if(terminal){
+    assert.equal(await submit.isDisabled(),true,mode);
+    await form.evaluate(e=>e.requestSubmit());
+    assert.equal(posts,1,mode);
+   }
+   if(saved){
+    assert.equal(await form.isHidden(),true,mode);
+   }else{
+    assert.equal(await form.isVisible(),true,mode);
+    assert.equal(await form.locator('[name="job"]').inputValue(),job,mode);
+    assert.equal(await form.locator('[name="consent"]').isChecked(),true,mode);
+   }
   }
-  if(['negative','wrong-id','timeout','bad-json'].includes(mode))assert.ok(message.includes(body.requestId));
-  checked++;await page.close();
+  assert.equal(await page.getByRole('dialog').isVisible(),true,mode);
+  assert.equal(await status.evaluate(element=>{
+   const r=element.getBoundingClientRect();
+   const modal=element.closest('dialog').getBoundingClientRect();
+   return document.activeElement===element&&r.top>=modal.top&&r.bottom<=modal.bottom;
+  }),true,mode);
+  await page.locator('.application-close').click();
+  await entry.click();
+  assert.equal(await page.evaluate(()=>window.renders),1,mode);
+  checked++;
+  await page.close();
  }
  await browser.close();console.log('PASS: '+checked+' browser cases (modal and isolated receipt scenarios; no live Turnstile/API).');
 })().catch(e=>{console.error(e);process.exit(1)});
