@@ -35,14 +35,33 @@ const copy = ukrainian ? {
   erased: 'Эта заявка удалена или согласие отозвано. Не отправляйте её повторно.',
   unconfirmed: 'Подтверждение не получено: заявка могла сохраниться. Не отправляйте её повторно и не обновляйте страницу. Для проверки сообщите рекрутеру номер заявки: '
 };
-let widget, busy = false, attempt = null, finished = false, uncertain = false;
+let widget, turnstileToken = '', busy = false, attempt = null, finished = false, uncertain = false;
 const locked = () => busy || finished || uncertain;
 const ready = config.enabled && config.privacyApproved && config.privacyVersion &&
   form.dataset.privacyVersion === config.privacyVersion &&
   /^https:\/\//.test(config.endpoint) && config.turnstileSiteKey;
 let widgetLoading = false;
 let opener;
-if (ready) status.textContent = copy.instructions;
+status.textContent = ready ? copy.instructions : copy.disabled;
+status.tabIndex = -1;
+
+function showSubmissionStatus(message) {
+  status.textContent = message;
+  if (dialog.open) {
+    status.focus({preventScroll: true});
+    status.scrollIntoView({block: 'nearest'});
+  }
+}
+
+function clearToken() {
+  turnstileToken = '';
+  button.disabled = true;
+}
+
+function invalidateToken(message) {
+  clearToken();
+  if (!attempt && !locked()) status.textContent = message;
+}
 
 function prepareTurnstile() {
   if (!ready || widget !== undefined || widgetLoading || !dialog.open) return;
@@ -50,9 +69,15 @@ function prepareTurnstile() {
     widget = window.turnstile.render('#anti-spam', {
       sitekey: config.turnstileSiteKey, action: 'candidate', size: 'compact',
       ...(ukrainian ? {language:'uk'} : {}),
-      callback: () => { button.disabled = locked(); },
-      'expired-callback': () => { button.disabled = true; },
-      'error-callback': () => { button.disabled = true; status.textContent = copy.widgetError; }
+      callback: token => {
+        turnstileToken = token;
+        button.disabled = locked() || !token;
+        if (status.textContent === copy.widgetError || status.textContent === copy.missingToken) {
+          status.textContent = copy.instructions;
+        }
+      },
+      'expired-callback': () => invalidateToken(copy.missingToken),
+      'error-callback': () => invalidateToken(copy.widgetError)
     });
     return;
   }
@@ -112,18 +137,22 @@ syncDialog();
 
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  if (!ready || locked() || !form.reportValidity() || !window.turnstile) return;
-  const token = window.turnstile.getResponse(widget);
-  if (!token) { button.disabled = true; status.textContent = copy.missingToken; return; }
+  if (locked() || !form.reportValidity()) return;
+  if (!ready) { showSubmissionStatus(copy.disabled); return; }
+  const token = turnstileToken;
+  if (!token) { showSubmissionStatus(copy.missingToken); return; }
   const data = Object.fromEntries(new FormData(form));
-  const fields = {name:data.name.trim(), contact:data.contact.trim(), city:data.city.trim(), job:data.job.trim(),
+  // The Worker accepts single-line text. Keep the original draft in the textarea.
+  const job = data.job.replace(/[\r\n\t]+/g, ' ').trim();
+  const fields = {name:data.name.trim(), contact:data.contact.trim(), city:data.city.trim(), job,
     consent:data.consent === 'yes', privacyVersion:config.privacyVersion};
   const serialized = JSON.stringify(fields);
   // Preserve request ID on retry of identical content; never store personal data in browser storage.
   if (!attempt || attempt.content !== serialized) attempt = {id:crypto.randomUUID(),content:serialized};
   const id = attempt.id;
-  busy = true; button.disabled = true;
-  status.textContent = copy.pending;
+  busy = true;
+  clearToken();
+  showSubmissionStatus(copy.pending);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25000);
   try {
@@ -141,16 +170,20 @@ form.addEventListener('submit', async event => {
       if (response.status === 410 && receipt.code === 'ERASED') throw new Error('erased');
       throw new Error('unconfirmed');
     }
-    status.textContent = copy.saved;
-    finished = true; form.reset();
+    finished = true;
+    form.reset();
+    form.hidden = true;
+    showSubmissionStatus(copy.saved);
   } catch (error) {
     const outcome = error.message;
     const known = ['rate', 'captcha', 'validation', 'disabled', 'duplicate', 'erased'].includes(outcome);
     const message = known ? copy[outcome] : null;
     uncertain = !message || outcome === 'duplicate' || outcome === 'erased';
-    status.textContent = message || copy.unconfirmed + id;
+    showSubmissionStatus(message || copy.unconfirmed + id);
   } finally {
-    clearTimeout(timer); busy = false; button.disabled = true;
-    window.turnstile.reset(widget);
+    clearTimeout(timer);
+    busy = false;
+    clearToken();
+    if (!locked()) window.turnstile.reset(widget);
   }
 });

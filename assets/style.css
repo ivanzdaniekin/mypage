@@ -412,7 +412,7 @@ a { color: #ff9c91; text-underline-offset: 4px; }
 section { scroll-margin-top: 20px; }
 @media(max-width: 380px) { .section { padding: 20px 14px; } .lnk { gap: 8px; padding: 12px 10px; } }
 
-#candidate-form { display: grid; gap: 10px; }
+#candidate-form:not([hidden]) { display: grid; gap: 10px; }
 #candidate-form > label { font-weight: 800; margin-top: 8px; }
 #candidate-form input:not([type=checkbox]), #candidate-form textarea { width: 100%; min-width: 0; box-sizing: border-box; color: #fff; background: #191919; border: 1px solid #888; border-radius: 10px; padding: 12px; font: inherit; }
 #candidate-form input:focus-visible, #candidate-form textarea:focus-visible { outline: 3px solid #ff6558; outline-offset: 3px; }
