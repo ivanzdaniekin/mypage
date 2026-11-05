@@ -423,3 +423,21 @@ section { scroll-margin-top: 20px; }
 .form-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .section h2, .section h3 { overflow-wrap: anywhere; }
 #anti-spam { min-width: 0; }
+
+.language-switch {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.language-switch a {
+  padding: 6px 12px;
+  border: 1px solid #ff6558;
+  border-radius: 12px;
+}
+.language-switch a[aria-current="page"] {
+  background: #a91b0f;
+  color: #fff;
+  text-decoration: none;
+}

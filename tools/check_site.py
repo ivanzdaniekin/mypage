@@ -10,17 +10,28 @@ class Parser(HTMLParser):
         super().__init__(convert_charrefs=True); self.tags=[]
     def handle_starttag(self,tag,attrs): self.tags.append((tag,dict(attrs)))
 diagnostics={'manual-form-test','turnstile-check'}
-pages=[ROOT/'index.html']+[p for p in ROOT.glob('*/index.html') if p.parent.name not in diagnostics]
+pages=sorted(p for p in ROOT.rglob('index.html') if p.relative_to(ROOT).parts[0] not in diagnostics)
 parsed={}
 policy_page=ROOT/'privacy/index.html'
+language_pairs=[
+    {'ru':'', 'uk':'uk/'},
+    {'ru':'vakansii/', 'uk':'uk/vakansii/'},
+]
 for p in pages:
     s=p.read_text(); parser=Parser(); parser.feed(s); parsed[p]=parser
     assert sum(t=='h1' for t,a in parser.tags)==1,p
-    assert ('html',{'lang':'ru'}) in parser.tags,p
+    lang='uk' if p.relative_to(ROOT).parts[0]=='uk' else 'ru'
+    assert ('html',{'lang':lang}) in parser.tags,p
     assert 'noindex' not in s.lower(),p
     canonical=[a['href'] for t,a in parser.tags if t=='link' and a.get('rel')=='canonical']
-    expected=BASE+('' if p.parent==ROOT else p.parent.name+'/')
+    expected=BASE+p.relative_to(ROOT).as_posix().removesuffix('index.html')
     if p!=policy_page: assert canonical==[expected],(p,canonical)
+    pair=next((pair for pair in language_pairs if expected==BASE+pair[lang]),None)
+    if pair:
+        alternate=[(a.get('hreflang'),a.get('href')) for t,a in parser.tags if t=='link' and a.get('rel')=='alternate']
+        assert sorted(alternate)==sorted((code,BASE+url) for code,url in pair.items()),(p,alternate)
+        switch=[(a.get('hreflang'),a.get('href'),a.get('aria-current')) for t,a in parser.tags if t=='a' and 'hreflang' in a]
+        assert sorted(switch)==sorted((code,'/mypage/'+url,'page' if code==lang else None) for code,url in pair.items()),(p,switch)
     for raw in re.findall(r'<script type="application/ld\+json">(.*?)</script>',s,re.S):
         data=json.loads(raw); assert data['@type']=='Person'; assert len(data['sameAs'])==5
     assert 'JobPosting' not in s
@@ -48,8 +59,9 @@ for field in ('title','description'):
         vals.append(re.search(r'<title>(.*?)</title>',s).group(1) if field=='title' else next(a['content'] for t,a in parser.tags if t=='meta' and a.get('name')=='description'))
     assert len(set(vals))==len(vals),field
 locs=[e.text for e in ET.parse(ROOT/'sitemap.xml').getroot().iter('{http://www.sitemaps.org/schemas/sitemap/0.9}loc')]
-assert set(locs)=={BASE,BASE+'vakansii/',BASE+'rabotodatelyam/'}
+assert len(locs)==len(set(locs)),locs
+assert set(locs)=={BASE+p.relative_to(ROOT).as_posix().removesuffix('index.html') for p in pages if p!=policy_page}
 css=(ROOT/'assets/style.css').read_text()
 for path in re.findall(r'url\("([^"\)]+)"\)',css): assert (ROOT/'assets'/path).is_file(),path
-print('PASS: SEO metadata on 3 indexed pages, internal links/assets/fragments including the policy, sitemap and JSON-LD.')
+print(f'PASS: SEO metadata on {len(locs)} sitemap pages, language pairs, internal links/assets/fragments, and JSON-LD.')
 for p in pages+list((ROOT/'assets').iterdir()): print(f'{p.relative_to(ROOT)}: {p.stat().st_size:,} bytes')
