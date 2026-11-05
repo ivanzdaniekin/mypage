@@ -401,6 +401,9 @@ h3 { font-size: 19px; margin: 22px 0 8px; }
 p, li { line-height: 1.7; }
 a { color: #ff9c91; text-underline-offset: 4px; }
 .ctas, .city-list { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+.ctas { justify-content: center; align-items: center; }
+.section > .ctas { margin: 0; }
+.ctas > .button { text-align: center; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 18px; border: 1px solid #ff6558; border-radius: 12px; background: #a91b0f; color: #fff; font-weight: 800; text-decoration: none; }
 .button.secondary { background: #171717; }
 .city-list a { padding: 10px 14px; border: 1px solid #777; border-radius: 12px; }
