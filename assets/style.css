@@ -500,3 +500,9 @@ html:has(.application-dialog[open]) { overflow: hidden; }
   grid-column: 1;
   grid-row: 2;
 }
+
+/* Informational disclosure only: no consent preference or browser storage. */
+.technology-notice { margin-top: 12px; text-align: left; line-height: 1.6; }
+.technology-notice summary { cursor: pointer; min-height: 44px; padding: 10px 0; }
+.technology-notice summary:focus-visible { outline: 3px solid #ff9c91; outline-offset: 2px; border-radius: 4px; }
+.technology-notice p { margin: 8px 0; overflow-wrap: anywhere; }
